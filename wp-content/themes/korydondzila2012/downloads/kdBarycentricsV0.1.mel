@@ -1,0 +1,268 @@
+//////////////////////////////////////////////////////////////////////////
+///                                                                    ///
+/// SCRIPT:           kdBarycentricsV0.1.mel - MEL Script              ///
+///                                                                    ///
+/// AUTHOR:           Kory Dondzila - kory@korydondzila.com            ///
+///                   www.korydondzila.com                             ///
+///                                                                    ///
+/// DESCRIPTION:           This is a prototype script.  It allows the  ///
+///                   user to create joints that follow vertices.      ///
+///                   With a model that has a blend shape that is      ///
+///                   completely changed, without adding or removing   ///
+///                   vertices, this means joints created with this    ///
+///                   script will move with the vertices.  Giving the  ///
+///                   to rig one character, blend it to the other and  ///
+///                   the rig is maintained.                           ///
+///                       The joints are place at the center of the    ///
+///                   triangle defined by the three vertices selected  ///
+///                   for that joint.                                  ///
+///                                                                    ///
+/// USAGE:            Source script then run: baryRigUI();             ///
+///                                                                    ///
+/// EDITS TO DO:          Simplify the expression for the joints.      ///
+///                   There is too much math going on and it's hard    ///
+///                   to make sense of.                                ///
+///                       Fix up the UI.                               ///
+///                                                                    ///
+/// THINGS TO ADD:        A way to fully rig characters and allow for  ///
+///                   the bary joints to still move.                   ///
+///                                                                    ///
+/// VERSIONS:         0.1 - May 30, 2012 - Initial Prototype           ///
+///                                                                    ///
+//////////////////////////////////////////////////////////////////////////
+
+////////////////////////////////////////////////////////////
+/////////////////// Procedure: createJoint /////////////////
+////////////////////////////////////////////////////////////
+//                                                        //
+//     This procedure creates the joints.  Using the      //
+// three selected vertices to place the joint and creates //
+// an expression that keeps the joint in the center of    //
+// the triangle defined by the three vertices.            //
+
+proc createJoint( int $isParent, string $parent, string $joint )
+{
+    // Put selected vertices into an array.
+    string $slVerts[ 3 ] = `ls -sl -fl`;
+    select -cl;
+    
+    // Create joint.
+    $joint = `joint -n ( $joint + "_baryJnt" )`;
+    
+    // The expression that moves each joint based on the positions of
+    // the three chosen vertices.  Most people will not understand this
+    // math at all, just know that it works.
+    expression -n ( $joint + "_Expr" ) -s
+    ( "string $verts[] = { \"" + $slVerts[ 0 ] + "\", \"" + $slVerts[ 1 ] + "\", \"" + $slVerts[ 2 ] + "\" };\n\n" +
+    
+    "vector $aPos = `xform -q -t $verts[ 0 ]`;\n" +
+    "vector $bPos = `xform -q -t $verts[ 1 ]`;\n" +
+    "vector $cPos = `xform -q -t $verts[ 2 ]`;\n\n" +
+    
+    "vector $abPos = { ( ( $aPos.x + $bPos.x ) / 2 ), ( ( $aPos.y + $bPos.y ) / 2 ), ( ( $aPos.z + $bPos.z ) / 2 ) };\n" +
+    "vector $bcPos = { ( ( $bPos.x + $cPos.x ) / 2 ), ( ( $bPos.y + $cPos.y ) / 2 ), ( ( $bPos.z + $cPos.z ) / 2 ) };\n" +
+    "vector $acPos = { ( ( $aPos.x + $cPos.x ) / 2 ), ( ( $aPos.y + $cPos.y ) / 2 ), ( ( $aPos.z + $cPos.z ) / 2 ) };\n\n" +
+    
+    "float $centerPosX = 0;\n" +
+    "float $centerPosY = 0;\n" +
+    "float $centerPosZ = 0;\n\n" +
+    
+    "if ( ( ( $cPos.y - $abPos.y ) != 0 ) && ( ( $aPos.y - $bcPos.y ) != 0 ) && ( ( $bPos.y - $acPos.y ) != 0 ) )\n" +
+    "{\n" +
+    "    if ( ( ( $cPos.x - $abPos.x ) != 0 ) && ( ( $aPos.x - $bcPos.x ) != 0 ) && ( ( ( ( $aPos.y - $bcPos.y ) / ( $aPos.x - $bcPos.x ) ) - ( ( $cPos.y - $abPos.y ) / ( $cPos.x - $abPos.x ) ) ) != 0 ) )\n" +
+    "    {\n" +
+    "        $centerPosX = ( ( ( ( $cPos.y - $abPos.y ) / ( $cPos.x - $abPos.x ) ) * ( - $cPos.x ) + $cPos.y ) - ( ( ( $aPos.y - $bcPos.y ) / ( $aPos.x - $bcPos.x ) ) * ( - $aPos.x ) + $aPos.y ) ) / ( ( ( $aPos.y - $bcPos.y ) / ( $aPos.x - $bcPos.x ) ) - ( ( $cPos.y - $abPos.y ) / ( $cPos.x - $abPos.x ) ) );\n" +
+    "        $centerPosY = ( ( $aPos.y - $bcPos.y ) / ( $aPos.x - $bcPos.x ) ) * ( $centerPosX ) + ( ( ( $aPos.y - $bcPos.y ) / ( $aPos.x - $bcPos.x ) ) * ( - $aPos.x ) + $aPos.y );\n" +
+    "        $centerPosZ = ( ( $aPos.z - $bcPos.z ) / ( $aPos.x - $bcPos.x ) ) * ( $centerPosX ) + ( ( ( $aPos.z - $bcPos.z ) / ( $aPos.x - $bcPos.x ) ) * ( - $aPos.x ) + $aPos.z );\n" +
+    "    }\n" +
+    "    else if ( ( ( $bPos.x - $acPos.x ) != 0 ) && ( ( $aPos.x - $bcPos.x ) != 0 ) && ( ( ( ( $aPos.y - $bcPos.y ) / ( $aPos.x - $bcPos.x ) ) - ( ( $bPos.y - $acPos.y ) / ( $bPos.x - $acPos.x ) ) ) != 0 ) )\n" +
+    "    {\n" +
+    "        $centerPosX = ( ( ( ( $bPos.y - $acPos.y ) / ( $bPos.x - $acPos.x ) ) * ( - $bPos.x ) + $bPos.y ) - ( ( ( $aPos.y - $bcPos.y ) / ( $aPos.x - $bcPos.x ) ) * ( - $aPos.x ) + $aPos.y ) ) / ( ( ( $aPos.y - $bcPos.y ) / ( $aPos.x - $bcPos.x ) ) - ( ( $bPos.y - $acPos.y ) / ( $bPos.x - $acPos.x ) ) );\n" +
+    "        $centerPosY = ( ( $aPos.y - $bcPos.y ) / ( $aPos.x - $bcPos.x ) ) * ( $centerPosX ) + ( ( ( $aPos.y - $bcPos.y ) / ( $aPos.x - $bcPos.x ) ) * ( - $aPos.x ) + $aPos.y );\n" +
+    "        $centerPosZ = ( ( $aPos.z - $bcPos.z ) / ( $aPos.x - $bcPos.x ) ) * ( $centerPosX ) + ( ( ( $aPos.z - $bcPos.z ) / ( $aPos.x - $bcPos.x ) ) * ( - $aPos.x ) + $aPos.z );\n" +
+    "    }\n" +
+    "    else if ( ( ( $cPos.x - $abPos.x ) != 0 ) && ( ( $bPos.x - $acPos.x ) != 0 ) && ( ( ( ( $bPos.y - $acPos.y ) / ( $bPos.x - $acPos.x ) ) - ( ( $cPos.y - $abPos.y ) / ( $cPos.x - $abPos.x ) ) ) != 0 ) )\n" +
+    "    {\n" +
+    "        $centerPosX = ( ( ( ( $cPos.y - $abPos.y ) / ( $cPos.x - $abPos.x ) ) * ( - $cPos.x ) + $cPos.y ) - ( ( ( $bPos.y - $acPos.y ) / ( $bPos.x - $acPos.x ) ) * ( - $bPos.x ) + $bPos.y ) ) / ( ( ( $bPos.y - $acPos.y ) / ( $bPos.x - $acPos.x ) ) - ( ( $cPos.y - $abPos.y ) / ( $cPos.x - $abPos.x ) ) );\n" +
+    "        $centerPosY = ( ( $bPos.y - $acPos.y ) / ( $bPos.x - $acPos.x ) ) * ( $centerPosX ) + ( ( ( $bPos.y - $acPos.y ) / ( $bPos.x - $acPos.x ) ) * ( - $bPos.x ) + $bPos.y );\n" +
+    "        $centerPosZ = ( ( $bPos.z - $acPos.z ) / ( $bPos.x - $acPos.x ) ) * ( $centerPosX ) + ( ( ( $bPos.z - $acPos.z ) / ( $bPos.x - $acPos.x ) ) * ( - $bPos.x ) + $bPos.z );\n" +
+    "    }\n" +
+    "    else if ( ( ( $cPos.z - $abPos.z ) != 0 ) && ( ( $aPos.z - $bcPos.z ) != 0 ) && ( ( ( ( $aPos.y - $bcPos.y ) / ( $aPos.z - $bcPos.z ) ) - ( ( $cPos.y - $abPos.y ) / ( $cPos.z - $abPos.z ) ) ) != 0 ) )\n" +
+    "    {\n" +
+    "        $centerPosZ = ( ( ( ( $cPos.y - $abPos.y ) / ( $cPos.z - $abPos.z ) ) * ( - $cPos.z ) + $cPos.y ) - ( ( ( $aPos.y - $bcPos.y ) / ( $aPos.z - $bcPos.z ) ) * ( - $aPos.z ) + $aPos.y ) ) / ( ( ( $aPos.y - $bcPos.y ) / ( $aPos.z - $bcPos.z ) ) - ( ( $cPos.y - $abPos.y ) / ( $cPos.z - $abPos.z ) ) );\n" +
+    "        $centerPosY = ( ( $aPos.y - $bcPos.y ) / ( $aPos.z - $bcPos.z ) ) * ( $centerPosZ ) + ( ( ( $aPos.y - $bcPos.y ) / ( $aPos.z - $bcPos.z ) ) * ( - $aPos.z ) + $aPos.y );\n" +
+    "        $centerPosX = ( ( $aPos.x - $bcPos.x ) / ( $aPos.z - $bcPos.z ) ) * ( $centerPosZ ) + ( ( ( $aPos.x - $bcPos.x ) / ( $aPos.z - $bcPos.z ) ) * ( - $aPos.z ) + $aPos.x );\n" +
+    "    }\n" +
+    "    else if ( ( ( $bPos.z - $acPos.z ) != 0 ) && ( ( $aPos.z - $bcPos.z ) != 0 ) && ( ( ( ( $aPos.y - $bcPos.y ) / ( $aPos.z - $bcPos.z ) ) - ( ( $bPos.y - $acPos.y ) / ( $bPos.z - $acPos.z ) ) ) != 0 ) )\n" +
+    "    {\n" +
+    "        $centerPosZ = ( ( ( ( $bPos.y - $acPos.y ) / ( $bPos.z - $acPos.z ) ) * ( - $bPos.z ) + $bPos.y ) - ( ( ( $aPos.y - $bcPos.y ) / ( $aPos.z - $bcPos.z ) ) * ( - $aPos.z ) + $aPos.y ) ) / ( ( ( $aPos.y - $bcPos.y ) / ( $aPos.z - $bcPos.z ) ) - ( ( $bPos.y - $acPos.y ) / ( $bPos.z - $acPos.z ) ) );\n" +
+    "        $centerPosY = ( ( $aPos.y - $bcPos.y ) / ( $aPos.z - $bcPos.z ) ) * ( $centerPosZ ) + ( ( ( $aPos.y - $bcPos.y ) / ( $aPos.z - $bcPos.z ) ) * ( - $aPos.z ) + $aPos.y );\n" +
+    "        $centerPosX = ( ( $aPos.x - $bcPos.x ) / ( $aPos.z - $bcPos.z ) ) * ( $centerPosZ ) + ( ( ( $aPos.x - $bcPos.x ) / ( $aPos.z - $bcPos.z ) ) * ( - $aPos.z ) + $aPos.x );\n" +
+    "    }\n" +
+    "    else if ( ( ( $cPos.z - $abPos.z ) != 0 ) && ( ( $bPos.z - $acPos.z ) != 0 ) && ( ( ( ( $bPos.y - $acPos.y ) / ( $bPos.z - $acPos.z ) ) - ( ( $cPos.y - $abPos.y ) / ( $cPos.z - $abPos.z ) ) ) != 0 ) )\n" +
+    "    {\n" +
+    "        $centerPosZ = ( ( ( ( $cPos.y - $abPos.y ) / ( $cPos.z - $abPos.z ) ) * ( - $cPos.z ) + $cPos.y ) - ( ( ( $bPos.y - $acPos.y ) / ( $bPos.z - $acPos.z ) ) * ( - $bPos.z ) + $bPos.y ) ) / ( ( ( $bPos.y - $acPos.y ) / ( $bPos.z - $acPos.z ) ) - ( ( $cPos.y - $abPos.y ) / ( $cPos.z - $abPos.z ) ) );\n" +
+    "        $centerPosY = ( ( $bPos.y - $acPos.y ) / ( $bPos.z - $acPos.z ) ) * ( $centerPosZ ) + ( ( ( $bPos.y - $acPos.y ) / ( $bPos.z - $acPos.z ) ) * ( - $bPos.z ) + $bPos.y );\n" +
+    "        $centerPosX = ( ( $bPos.x - $acPos.x ) / ( $bPos.z - $acPos.z ) ) * ( $centerPosZ ) + ( ( ( $bPos.x - $acPos.x ) / ( $bPos.z - $acPos.z ) ) * ( - $bPos.z ) + $bPos.x );\n" +
+    "    }\n" +
+    "}\n" +
+    "else\n" +
+    "{\n" +
+    "    if ( ( ( $cPos.x - $abPos.x ) != 0 ) && ( ( $aPos.x - $bcPos.x ) != 0 ) && ( ( ( ( $aPos.z - $bcPos.z ) / ( $aPos.x - $bcPos.x ) ) - ( ( $cPos.z - $abPos.z ) / ( $cPos.x - $abPos.x ) ) ) != 0 ) )\n" +
+    "    {\n" +
+    "        $centerPosX = ( ( ( ( $cPos.z - $abPos.z ) / ( $cPos.x - $abPos.x ) ) * ( - $cPos.x ) + $cPos.z ) - ( ( ( $aPos.z - $bcPos.z ) / ( $aPos.x - $bcPos.x ) ) * ( - $aPos.x ) + $aPos.z ) ) / ( ( ( $aPos.z - $bcPos.z ) / ( $aPos.x - $bcPos.x ) ) - ( ( $cPos.z - $abPos.z ) / ( $cPos.x - $abPos.x ) ) );\n" +
+    "        $centerPosY = ( ( $aPos.y - $bcPos.y ) / ( $aPos.x - $bcPos.x ) ) * ( $centerPosX ) + ( ( ( $aPos.y - $bcPos.y ) / ( $aPos.x - $bcPos.x ) ) * ( - $aPos.x ) + $aPos.y );\n" +
+    "        $centerPosZ = ( ( $aPos.z - $bcPos.z ) / ( $aPos.x - $bcPos.x ) ) * ( $centerPosX ) + ( ( ( $aPos.z - $bcPos.z ) / ( $aPos.x - $bcPos.x ) ) * ( - $aPos.x ) + $aPos.z );\n" +
+    "    }\n" +
+    "    else if ( ( ( $bPos.x - $acPos.x ) != 0 ) && ( ( $aPos.x - $bcPos.x ) != 0 ) && ( ( ( ( $aPos.z - $bcPos.z ) / ( $aPos.x - $bcPos.x ) ) - ( ( $bPos.z - $acPos.z ) / ( $bPos.x - $acPos.x ) ) ) != 0 ) )\n" +
+    "    {\n" +
+    "        $centerPosX = ( ( ( ( $bPos.z - $acPos.z ) / ( $bPos.x - $acPos.x ) ) * ( - $bPos.x ) + $bPos.z ) - ( ( ( $aPos.z - $bcPos.z ) / ( $aPos.x - $bcPos.x ) ) * ( - $aPos.x ) + $aPos.z ) ) / ( ( ( $aPos.z - $bcPos.z ) / ( $aPos.x - $bcPos.x ) ) - ( ( $bPos.z - $acPos.z ) / ( $bPos.x - $acPos.x ) ) );\n" +
+    "        $centerPosY = ( ( $aPos.y - $bcPos.y ) / ( $aPos.x - $bcPos.x ) ) * ( $centerPosX ) + ( ( ( $aPos.y - $bcPos.y ) / ( $aPos.x - $bcPos.x ) ) * ( - $aPos.x ) + $aPos.y );\n" +
+    "        $centerPosZ = ( ( $aPos.z - $bcPos.z ) / ( $aPos.x - $bcPos.x ) ) * ( $centerPosX ) + ( ( ( $aPos.z - $bcPos.z ) / ( $aPos.x - $bcPos.x ) ) * ( - $aPos.x ) + $aPos.z );\n" +
+    "    }\n" +
+    "    else if ( ( ( $cPos.x - $abPos.x ) != 0 ) && ( ( $bPos.x - $acPos.x ) != 0 ) && ( ( ( ( $bPos.z - $acPos.z ) / ( $bPos.x - $acPos.x ) ) - ( ( $cPos.z - $abPos.z ) / ( $cPos.x - $abPos.x ) ) ) != 0 ) )\n" +
+    "    {\n" +
+    "        $centerPosX = ( ( ( ( $cPos.z - $abPos.z ) / ( $cPos.x - $abPos.x ) ) * ( - $cPos.x ) + $cPos.z ) - ( ( ( $bPos.z - $acPos.z ) / ( $bPos.x - $acPos.x ) ) * ( - $bPos.x ) + $bPos.z ) ) / ( ( ( $bPos.z - $acPos.z ) / ( $bPos.x - $acPos.x ) ) - ( ( $cPos.z - $abPos.z ) / ( $cPos.x - $abPos.x ) ) );\n" +
+    "        $centerPosY = ( ( $bPos.y - $acPos.y ) / ( $bPos.x - $acPos.x ) ) * ( $centerPosX ) + ( ( ( $bPos.y - $acPos.y ) / ( $bPos.x - $acPos.x ) ) * ( - $bPos.x ) + $bPos.y );\n" +
+    "        $centerPosZ = ( ( $bPos.z - $acPos.z ) / ( $bPos.x - $acPos.x ) ) * ( $centerPosX ) + ( ( ( $bPos.z - $acPos.z ) / ( $bPos.x - $acPos.x ) ) * ( - $bPos.x ) + $bPos.z );\n" +
+    "    }\n" +
+    "    else if ( ( ( $cPos.z - $abPos.z ) != 0 ) && ( ( $aPos.z - $bcPos.z ) != 0 ) && ( ( ( ( $aPos.x - $bcPos.x ) / ( $aPos.z - $bcPos.z ) ) - ( ( $cPos.x - $abPos.x ) / ( $cPos.z - $abPos.z ) ) ) != 0 ) )\n" +
+    "    {\n" +
+    "        $centerPosZ = ( ( ( ( $cPos.x - $abPos.x ) / ( $cPos.z - $abPos.z ) ) * ( - $cPos.z ) + $cPos.x ) - ( ( ( $aPos.x - $bcPos.x ) / ( $aPos.z - $bcPos.z ) ) * ( - $aPos.z ) + $aPos.x ) ) / ( ( ( $aPos.x - $bcPos.x ) / ( $aPos.z - $bcPos.z ) ) - ( ( $cPos.x - $abPos.x ) / ( $cPos.z - $abPos.z ) ) );\n" +
+    "        $centerPosY = ( ( $aPos.y - $bcPos.y ) / ( $aPos.z - $bcPos.z ) ) * ( $centerPosZ ) + ( ( ( $aPos.y - $bcPos.y ) / ( $aPos.z - $bcPos.z ) ) * ( - $aPos.z ) + $aPos.y );\n" +
+    "        $centerPosX = ( ( $aPos.x - $bcPos.x ) / ( $aPos.z - $bcPos.z ) ) * ( $centerPosZ ) + ( ( ( $aPos.x - $bcPos.x ) / ( $aPos.z - $bcPos.z ) ) * ( - $aPos.z ) + $aPos.x );\n" +
+    "    }\n" +
+    "    else if ( ( ( $bPos.z - $acPos.z ) != 0 ) && ( ( $aPos.z - $bcPos.z ) != 0 ) && ( ( ( ( $aPos.x - $bcPos.x ) / ( $aPos.z - $bcPos.z ) ) - ( ( $bPos.x - $acPos.x ) / ( $bPos.z - $acPos.z ) ) ) != 0 ) )\n" +
+    "    {\n" +
+    "        $centerPosZ = ( ( ( ( $bPos.x - $acPos.x ) / ( $bPos.z - $acPos.z ) ) * ( - $bPos.z ) + $bPos.x ) - ( ( ( $aPos.x - $bcPos.x ) / ( $aPos.z - $bcPos.z ) ) * ( - $aPos.z ) + $aPos.x ) ) / ( ( ( $aPos.x - $bcPos.x ) / ( $aPos.z - $bcPos.z ) ) - ( ( $bPos.x - $acPos.x ) / ( $bPos.z - $acPos.z ) ) );\n" +
+    "        $centerPosY = ( ( $aPos.y - $bcPos.y ) / ( $aPos.z - $bcPos.z ) ) * ( $centerPosZ ) + ( ( ( $aPos.y - $bcPos.y ) / ( $aPos.z - $bcPos.z ) ) * ( - $aPos.z ) + $aPos.y );\n" +
+    "        $centerPosX = ( ( $aPos.x - $bcPos.x ) / ( $aPos.z - $bcPos.z ) ) * ( $centerPosZ ) + ( ( ( $aPos.x - $bcPos.x ) / ( $aPos.z - $bcPos.z ) ) * ( - $aPos.z ) + $aPos.x );\n" +
+    "    }\n" +
+    "    else if ( ( ( $cPos.z - $abPos.z ) != 0 ) && ( ( $bPos.z - $acPos.z ) != 0 ) && ( ( ( ( $bPos.x - $acPos.x ) / ( $bPos.z - $acPos.z ) ) - ( ( $cPos.x - $abPos.x ) / ( $cPos.z - $abPos.z ) ) ) != 0 ) )\n" +
+    "    {\n" +
+    "        $centerPosZ = ( ( ( ( $cPos.x - $abPos.x ) / ( $cPos.z - $abPos.z ) ) * ( - $cPos.z ) + $cPos.x ) - ( ( ( $bPos.x - $acPos.x ) / ( $bPos.z - $acPos.z ) ) * ( - $bPos.z ) + $bPos.x ) ) / ( ( ( $bPos.x - $acPos.x ) / ( $bPos.z - $acPos.z ) ) - ( ( $cPos.x - $abPos.x ) / ( $cPos.z - $abPos.z ) ) );\n" +
+    "        $centerPosY = ( ( $bPos.y - $acPos.y ) / ( $bPos.z - $acPos.z ) ) * ( $centerPosZ ) + ( ( ( $bPos.y - $acPos.y ) / ( $bPos.z - $acPos.z ) ) * ( - $bPos.z ) + $bPos.y );\n" +
+    "        $centerPosX = ( ( $bPos.x - $acPos.x ) / ( $bPos.z - $acPos.z ) ) * ( $centerPosZ ) + ( ( ( $bPos.x - $acPos.x ) / ( $bPos.z - $acPos.z ) ) * ( - $bPos.z ) + $bPos.x );\n" +
+    "    }\n" +
+    "}\n\n" +
+    
+    "move -a $centerPosX $centerPosY $centerPosZ " + $joint + ";" ) -o $joint;
+    
+    // If a parent joint was loaded then parent the new joint to it.
+    if ( $isParent )
+    {
+        parent $joint $parent;
+    }
+}
+
+// This procedure gets the values to be used in the creation procedure.
+proc getInfo( string $parentJoint, string $jointName )
+{
+    string $parent = `textFieldButtonGrp -q -tx $parentJoint`;
+    string $joint = `textFieldButtonGrp -q -tx $jointName`;
+    int $isParent = 0;
+    
+    if ( $parent != "" )
+    {
+        $isParent = 1;
+    }
+    
+    createJoint( $isParent, $parent, $joint );
+}
+
+// This procedure disables the create and edit name button and
+// enables the text field if user wants to edit name.
+// This requires the user to recheck the name before creating the
+// city.
+proc editName( string $jointName, string $editName, string $create )
+{
+    textFieldButtonGrp -e -ed 1 $jointName;
+    button -e -en 0 $editName;
+    button -e -en 0 $create;
+}
+
+// This procedure checks if the name is valid and substrings the name to 32 characters.
+proc validName( string $jointName, string $editName, string $create )
+{
+    string $testString = `textFieldButtonGrp -q -tx $jointName`;
+    
+    // If name is more than 32 characters then substring the first 32.
+    int $size = size( $testString );
+    if ( $size > 32 )
+    {
+        $testString = `substring $testString 1 16`;
+        textFieldButtonGrp -e -tx $testString $jointName;
+    }
+    
+    // Returns the valid characters in the name.
+    string $matchingPart = `match "^[a-zA-Z][0-9a-zA-Z_]*$" $testString`;
+    
+    // If matched name is the same as name goodmatch = 1 else 0.
+    int $goodMatch = ! `strcmp $matchingPart $testString`;
+    
+    // If no name is given then goodmatch is 0.
+    if ( $testString == "" )
+    {
+        $goodMatch = 0;
+    }
+    
+    // If goodmatch is 1 then disable textField and enable edit name and create buttons.
+    // Else give warning.
+    if ( $goodMatch )
+    {
+        textFieldButtonGrp -e -ed 0 $jointName;
+        button -e -en 1 $editName;
+        button -e -en 1 $create;
+    }
+    else
+    {
+        confirmDialog -t "Warning" -m "Invalid joint name." -ma "center" -b "OK" -db "OK" -cb "OK" -ds "OK" -icn "warning";
+    }
+}
+
+// Substrings the name to 32 characters if name was greater than 32 characters.
+proc sizeName( string $jointName )
+{
+    string $testString = `textFieldButtonGrp -q -tx $jointName`;
+    int $size = size( $testString );
+    if ( $size > 32 )
+    {
+        $testString = `substring $testString 1 32`;
+        textFieldButtonGrp -e -tx $testString $jointName;
+    }
+}
+
+// Loads the name of the selected parent joint.
+proc loadParent( string $parentJoint )
+{
+    string $jnts[] = `ls -sl -type "joint"`;
+    textFieldButtonGrp -e -tx $jnts[0] $parentJoint;
+}
+    
+// UI creator
+global proc baryRigUI()
+{
+    // If window exists then delete it.  Prevents multiple instances of the
+    // same window.
+    if (`window -q -ex bariRig`) deleteUI bariRig;
+    
+    // Declares global strings.
+    global string $parentJoint, $jointName, $editName, $create;
+    
+    // Makes window size to everything in it.
+    string $dialogBoxWindow = `window -t "Baricentric Rigger" -rtf 1 bariRig`;
+    
+    columnLayout -adj 1;
+        frameLayout -l "Joints";
+            columnLayout -adj 1;
+                $parentJoint = `textFieldButtonGrp -l "Parent Joint" -bl "Load Parent" -bc "loadParent( $parentJoint )"`;
+                $jointName = `textFieldButtonGrp -l "Joint Name" -cc "sizeName( $jointName )" -bl "Check Name" -bc "validName( $jointName, $editName, $create )"`;
+                $editName = `button -en 0 -l "Edit Name" -c "editName( $jointName, $editName, $create )"`;
+            setParent ..;
+        setParent ..;
+        
+        $create = `button -l "Create Joint" -en 0 -c "getInfo( $parentJoint, $jointName )"`;
+    
+    // Show the window.        
+    showWindow $dialogBoxWindow;
+}

@@ -1,0 +1,813 @@
+//////////////////////////////////////////////////////////////////////////
+///                                                                    ///
+/// SCRIPT:           kdAutoRigV0.1.mel - MEL Script                   ///
+///                                                                    ///
+/// AUTHOR:           Kory Dondzila - kory@korydondzila.com            ///
+///                   www.korydondzila.com                             ///
+///                                                                    ///
+/// DESCRIPTION:           This is a prototype script.  It allows the  ///
+///                   user to rig the spine and neck of a character.   ///
+///                   The script generates the locators for the user   ///
+///                   to place where they want the joints.             ///
+///                                                                    ///
+/// USAGE:            Source script then run: autoRigUI();             ///
+///                                                                    ///
+/// EDITS TO DO:      Parts of neck rig not working properly.          ///
+///                                                                    ///
+/// THINGS TO ADD:    Procedures to rig; legs, arms, and hands.        ///
+///                                                                    ///
+/// VERSIONS:         0.1 - Oct 26, 2011 - Initial Prototype           ///
+///                                                                    ///
+//////////////////////////////////////////////////////////////////////////
+
+////////////////////////////////////////////////////////////
+////////////////////// Procedure: neck /////////////////////
+////////////////////////////////////////////////////////////
+//                                                        //
+//     This procedure rigs the neck for the character.    //
+// Creating all the joints, controls and attribute        //
+// connections.                                           //
+
+proc neck( string $charTxt, string $neckButton )
+{
+    // Disables the neck button and queries the character name.
+    button -e -en 0 $neckButton;
+    string $charName = `textFieldButtonGrp -q -tx $charTxt`;
+    
+    // Setting up initial variables.
+    string $selJnt[];
+    string $locators[] = { "neck", "head" };
+    vector $neckLoc = `getAttr neck_loc.t`; // Gets the new positions of the neck and head locators.
+    vector $headLoc = `getAttr head_loc.t`;
+    string $bindSet = "skinBind_jnts";
+    string $attrs[] = { ".tx", ".ty", ".tz", ".rx", ".ry", ".rz", ".sx", ".sy", ".sz", ".v" };
+    string $neckCtrl[];
+    string $headCtrl;
+    string $bindJnt[];
+    string $dup[];
+    string $headWSGrp[];
+    string $headNSGrp[];
+    string $headBSGrp[];
+    string $headTSGrp[];
+    
+    // Creates neck control joints.
+    $neckCtrl[ 0 ] = `joint -p ( $neckLoc.x ) ( $neckLoc.y ) ( $neckLoc.z ) -n ( "neck_ctrl" ) -rad 0.5`;
+    $neckCtrl[ 1 ] = `joint -p ( $headLoc.x ) ( $headLoc.y ) ( $headLoc.z ) -n ( "neck_ctrl_end_jnt" ) -rad 0.5`;
+    
+    // Creates the main joints for the neck.
+    select -cl;
+    $selJnt[ 0 ] = `joint -p ( $neckLoc.x ) ( $neckLoc.y ) ( $neckLoc.z ) -n ( "neck_1_jnt" ) -rad 0.5`;
+    $selJnt[ 1 ] = `joint -p ( $headLoc.x ) ( $headLoc.y ) ( $headLoc.z ) -n ( "neck_end_jnt" ) -rad 0.5`;
+    
+    // Creates the the joints to straighten the neck.
+    select -cl;
+    $bindJnt[ 0 ] = `joint -p ( $neckLoc.x ) ( $neckLoc.y ) ( $neckLoc.z ) -n ( "neck_curve_base_strait_jnt" ) -rad 0.5`;
+    select -cl;
+    $bindJnt[ 1 ] = `joint -p ( $headLoc.x ) ( $headLoc.y ) ( $headLoc.z ) -n ( "neck_curve_end_strait_jnt" ) -rad 0.5`;
+    // Adds the joints to the select set.
+    sets -e -add $bindSet $bindJnt;
+    
+    // Gets the positions of the neck and head joint.
+    vector $sjPos = ( `joint -q -p $selJnt[ 0 ]` );
+    vector $ejPos = ( `joint -q -p $selJnt[ 1 ]` );
+    string $crJnt[];
+    float $radius = ( `getAttr ( $selJnt[ 0 ] + ".radius" )` );
+    
+    // Input an integer for the TOTAL number of segments you need, for $seg.
+    int $seg = 3;
+    select -cl;
+    
+    // For loop creates joints in the proper position
+    // and assigns them to an array and parents the first created joint
+    // to the start joint and parents the end joint to the last created joint.
+    for ( $i = $seg; $i > 1; $i-- )
+    {
+        int $x = abs ( $i - $seg );
+        $crJnt[ $x ] = `joint -p ( ( ( ( ( $sjPos.x ) - ( $ejPos.x ) ) / $seg ) * ( $i - 1 ) ) + ( $ejPos.x ) )
+                                 ( ( ( ( ( $sjPos.y ) - ( $ejPos.y ) ) / $seg ) * ( $i - 1 ) ) + ( $ejPos.y ) )
+                                 ( ( ( ( ( $sjPos.z ) - ( $ejPos.z ) ) / $seg ) * ( $i - 1 ) ) + ( $ejPos.z ) ) -n ( "neck_" + ( $x + 2 ) + "_jnt" ) -rad $radius`;
+        if ( $x == 0 )
+        {
+            // Duplicates the first joint up from the neck.
+            // To be used to straighten the neck.
+            $dup = `duplicate $crJnt[ $x ]`;
+            $bindJnt[ 2 ] = `rename $dup[ 0 ] "neck_curve_mid_strait_jnt"`;
+            parent $crJnt[ $x ] $selJnt[ 0 ];
+        }
+        
+        if ( ( $x + 1 ) == ( $seg - 1 ) )
+        {
+            parent $selJnt[ 1 ] $crJnt[ $x ];
+        }
+    }
+    
+    // Adds created joints to the select set and orients the joints.
+    sets -e -add $bindSet $crJnt;
+    $bindJnt = { $bindJnt[ 0 ], $bindJnt[ 2 ], $bindJnt[ 1 ] };
+    parent $bindJnt[ 1 ] $bindJnt[ 0 ];
+    joint -e -oj xyz -sao zdown -zso -ch $selJnt[ 0 ];
+    joint -e -oj xyz -sao zdown -zso -ch $bindJnt[ 0 ];
+    joint -e -oj xyz -sao zdown -zso -ch $neckCtrl[ 0 ];
+    
+    // Creates the neck control.
+    circle -nr 1 0 0 -n "neck";
+    parent -add -s neckShape $neckCtrl[ 0 ];
+    delete neck;
+    $dup = `circle -nr 0 0 1 -n "head_ctrl"`;
+    $headCtrl = $dup[ 0 ];
+    move -a ( $headLoc.x ) ( ( $headLoc.y ) +0.8 ) ( $headLoc.z ) $headCtrl;
+    move -a ( $headLoc.x) ( $headLoc.y ) ( $headLoc.z ) ( $headCtrl + ".scalePivot" ) ( $headCtrl + ".rotatePivot" );
+    makeIdentity -a 1 -t 1 $headCtrl;
+    delete -ch $headCtrl;
+    
+    // Distance node uses the head and neck locators.
+    // It is used to control the straightening of the neck.
+    string $neckDist = `distanceDimension -sp ( $neckLoc.x ) ( $neckLoc.y ) ( $neckLoc.z ) -ep ( $headLoc.x ) ( $headLoc.y ) ( $headLoc.z )`;
+    rename "distanceDimension1" "neck_dist";
+    $neckDist = "neck_distShape";
+    string $neckStartDist = `rename "neck_loc" "neck_start_dist"`;
+    string $neckEndDist = `rename "head_loc" "neck_end_dist"`;
+    
+    // Spline ik used for controlling the bend in the neck.
+    string $ikHandle[] = `ikHandle -sj $selJnt[ 0 ] -ee $selJnt[ 1 ] -sol ikSplineSolver -n "neck_ikHandle"`;
+    $ikHandle[ 1 ] = `rename $ikHandle[ 1 ] ( $ikHandle[ 0 ] + "_eff" )`;
+    $ikHandle[ 2 ] = `rename $ikHandle[ 2 ] "neck_curve"`;
+    
+    // Creates the curve info node for the neck.
+    string $neckInfo = `arclen -ch 1 $ikHandle[ 2 ]`;
+    $neckInfo = `rename $neckInfo "neck_curveInfo"`;
+    addAttr -at "float" -ln "normalizedScale"  $neckInfo;
+    float $neckLengthNorm = `getAttr ( $neckInfo + ".arcLength" )`;
+    select -cl;
+    
+    // Setting up the groups for contraining the head.
+    parent $neckEndDist $bindJnt[ 2 ] $headCtrl;
+    string $headCtrlGrp = `group -n ( $headCtrl + "_grp" ) -p ( $charName + "_ctrl_grp" ) $headCtrl`;
+    xform -os -piv ( $headLoc.x ) ( $headLoc.y ) ( $headLoc.z ) $headCtrlGrp;
+    $headWSGrp[ 0 ] = `group -n ( $headCtrl + "_world_space_grp" ) -em -p ( $charName + "_ctrl_grp" )`;
+    $headWSGrp[ 1 ] = `group -n ( $headCtrl + "_world_tSpace" ) -em -p $headWSGrp[ 0 ]`;
+    $headWSGrp[ 2 ] = `group -n ( $headCtrl + "_world_oSpace" ) -em -p $headWSGrp[ 0 ]`;
+    xform -ws -piv ( $headLoc.x ) ( $headLoc.y ) ( $headLoc.z ) $headWSGrp[ 1 ];
+    xform -ws -piv ( $headLoc.x ) ( $headLoc.y ) ( $headLoc.z ) $headWSGrp[ 2 ];
+    
+    // Setting up the groups for contraining the head.
+    string $neckCtrlGrp = `group -n ( $neckCtrl[ 0 ] + "_grp" ) -p ( $charName + "_ctrl_grp" )  $neckCtrl[ 0 ]`;
+    xform -ws -piv 0 0 0 $neckCtrlGrp;
+    $headNSGrp[ 0 ] = `group -n ( $headCtrl + "_neck_space_grp" ) -em -p $neckCtrl[ 1 ]`;
+    xform -ws -piv ( $headLoc.x ) ( $headLoc.y ) ( $headLoc.z ) $headNSGrp[ 0 ];
+    $headNSGrp[ 1 ] = `group -n ( $headCtrl + "_neck_tSpace" ) -em -p $headNSGrp`;
+    $headNSGrp[ 2 ] = `group -n ( $headCtrl + "_neck_oSpace" ) -em -p $headNSGrp`;
+    xform -ws -piv ( $headLoc.x ) ( $headLoc.y ) ( $headLoc.z ) $headNSGrp[ 1 ];
+    xform -ws -piv ( $headLoc.x ) ( $headLoc.y ) ( $headLoc.z ) $headNSGrp[ 2 ];
+    
+    // Setting up the the neck grp and neck DoNotTouch grp.
+    string $neckGrp = `group -n "neck_grp" -p "spine_grp" $selJnt[ 0 ]`;
+    xform -ws -piv 0 0 0 $neckGrp;
+    string $neckDNT = `group -n "neck_doNotTouch_grp" -p $neckGrp $ikHandle[ 0 ] $ikHandle[ 2 ] $neckDist`;
+    xform -ws -piv 0 0 0 $neckDNT;
+    
+    // Setting up the groups for contraining the head.
+    $headBSGrp[ 0 ] = `group -n ( $headCtrl +"_body_space_grp" ) -em -p "upperBody_ctrl"`;
+    $headBSGrp[ 1 ] = `group -n ( $headCtrl +"_body_tSpace" ) -em -p $headBSGrp`;
+    $headBSGrp[ 2 ] = `group -n ( $headCtrl +"_body_oSpace" ) -em -p $headBSGrp`;
+    xform -ws -piv ( $headLoc.x ) ( $headLoc.y ) ( $headLoc.z ) $headBSGrp[ 1 ];
+    xform -ws -piv ( $headLoc.x ) ( $headLoc.y ) ( $headLoc.z ) $headBSGrp[ 2 ];
+    
+    // Setting up the groups for contraining the head.
+    string $neckStraitGrp = `group -n "neck_curve_strait_grp" -p "torso_ctrl" $bindJnt[ 0 ]`;
+    xform -ws -piv ( $neckLoc.x ) ( $neckLoc.y ) ( $neckLoc.z ) $neckStraitGrp;
+    string $neckCtrlGrpConst = `group -n ( $neckCtrlGrp + "_const" ) -em -p "torso_ctrl"`;
+    $headTSGrp[ 0 ] = `group -n ( $headCtrl + "_torso_space_grp" ) -em -p "torso_ctrl"`;
+    $headTSGrp[ 1 ] = `group -n ( $headCtrl + "_torso_tSpace" ) -em -p $headTSGrp`;
+    $headTSGrp[ 2 ] = `group -n ( $headCtrl + "_torso_oSpace" ) -em -p $headTSGrp`;
+    xform -ws -piv ( $headLoc.x ) ($headLoc.y ) ( $headLoc.z ) $headTSGrp[ 1 ];
+    xform -ws -piv ( $headLoc.x ) ($headLoc.y ) ( $headLoc.z ) $headTSGrp[ 2 ];
+    
+    // Parents the neck locator to the torso control.
+    parent $neckStartDist "torso_ctrl";
+    
+    // Parent and orient constrains the head ctrl grp.
+    // and parent constrains the neck ctrl grp.
+    string $tSpaceConst[] = `pointConstraint $headNSGrp[ 1 ] $headTSGrp[ 1 ] $headBSGrp[ 1 ] $headWSGrp[ 1 ] $headCtrlGrp`;
+    string $oSpaceConst[] = `orientConstraint $headNSGrp[ 2 ] $headTSGrp[ 2 ] $headBSGrp[ 2 ] $headWSGrp[ 2 ] $headCtrlGrp`;
+    parentConstraint $neckCtrlGrpConst $neckCtrlGrp;
+    
+    // Adding the attributes for the tSpace and oSpace for the head
+    // to the settings grp.
+    string $settings = ( "nahiel_settings_grp" );
+    addAttr -at enum -en "Neck:Torso:Body:World" -ln "headTSpace" -k 1 $settings;
+    string $tSpace = ( $settings + ".headTSpace" );
+    addAttr -at enum -en "Neck:Torso:Body:World" -ln "headOSpace" -k 1 $settings;
+    string $oSpace = ( $settings + ".headOSpace" );
+    
+    // For loop sets driven keys for the head contraints.
+    string $space[] = { "neck", "torso", "body", "world" };
+    for ( $i = 0; $i < 4; $i++ )
+    {
+        setDrivenKeyframe -currentDriver $tSpace -dv $i -v 1 ( "head_ctrl_grp_pointConstraint1.head_ctrl_" + $space[ $i ] + "_tSpaceW" + $i );
+        for ( $s = 0; $s < 4; $s++ )
+        {
+            if ( $s != $i )
+            setDrivenKeyframe -currentDriver $tSpace -dv $i -v 0 ( "head_ctrl_grp_pointConstraint1.head_ctrl_" + $space[ $s ] + "_tSpaceW" + $s );
+        }
+    }
+    
+    // For loop sets driven keys for the head contraints.
+    for ( $i = 0; $i < 4; $i++ )
+    {
+        setDrivenKeyframe -currentDriver $oSpace -dv $i -v 1 ( "head_ctrl_grp_orientConstraint1.head_ctrl_" + $space[ $i ] + "_oSpaceW" + $i );
+        for ( $s = 0; $s < 4; $s++ )
+        {
+            if ( $s != $i )
+            setDrivenKeyframe -currentDriver $oSpace -dv $i -v 0 ( "head_ctrl_grp_orientConstraint1.head_ctrl_" + $space[ $s ] + "_oSpaceW" + $s );
+        }
+    }
+    
+    // Creates the normalized scale multiply/divide node for
+    // the neck curve.
+    string $neckCurveNorm = `shadingNode -au multiplyDivide -n ( $ikHandle[ 2 ] + "_normalizedScale" )`;
+    setAttr ( $neckCurveNorm + ".operation" ) 2;
+    setAttr ( $neckCurveNorm + ".input2X" ) $neckLengthNorm;
+    connectAttr ( $neckInfo + ".arcLength" ) ( $neckCurveNorm + ".input1X" );
+    connectAttr ( $neckCurveNorm + ".outputX" ) ( $neckInfo + ".normalizedScale" );
+    
+    // Creates the global scale multiply/divide node for
+    // controlling the scale of the neck joints.
+    string $neckCurveGlobal = `shadingNode -au multiplyDivide -n ( $ikHandle[ 2 ] + "_globalScale" )`;
+    setAttr ( $neckCurveGlobal + ".operation" ) 2;
+    connectAttr ( $neckInfo + ".normalizedScale" ) ( $neckCurveGlobal + ".input1X" );
+    connectAttr ( $charName + "_global_ctrl.globalScale" ) ( $neckCurveGlobal + ".input2X" );
+    connectAttr ( $neckCurveGlobal + ".outputX" ) ( $selJnt[ 0 ] + ".scaleX" );
+    connectAttr ( $neckCurveGlobal + ".outputX" ) ( $crJnt[ 0 ] + ".scaleX" );
+    connectAttr ( $neckCurveGlobal + ".outputX" ) ( $crJnt[ 1 ] + ".scaleX" );
+    
+    // Creates the normalized scale multiply/divide node for
+    // controlling the straightening of the neck.
+    string $neckNormScale = `shadingNode -au multiplyDivide -n "neck_normalizedScale"`;
+    setAttr ( $neckNormScale + ".operation" ) 2;
+    connectAttr ( $neckDist + ".distance" ) ( $neckNormScale + ".input1X" );
+    connectAttr ( $charName + "_global_ctrl.globalScale" ) ( $neckNormScale + ".input2X" );
+    
+    // Sets driven keys for scaling the straight joints.
+    setDrivenKeyframe -currentDriver ( $neckNormScale + ".input1Y" ) -dv 0.0361 -v 0.1 
+                      ( $bindJnt[ 0 ] + ".scaleX" ) ( $bindJnt[ 0 ] + ".scaleY" ) ( $bindJnt[ 0 ] + ".scaleZ" )
+                      ( $bindJnt[ 2 ] + ".scaleX" ) ( $bindJnt[ 2 ] + ".scaleY" ) ( $bindJnt[ 2 ] + ".scaleZ" );
+                      
+    // Sets driven keys for scaling the straight joints.
+    setDrivenKeyframe -currentDriver ( $neckNormScale + ".input1Y" ) -dv $neckLengthNorm -v 1 
+                      ( $bindJnt[ 0 ] + ".scaleX" ) ( $bindJnt[ 0 ] + ".scaleY" ) ( $bindJnt[ 0 ] + ".scaleZ" )
+                      ( $bindJnt[ 2 ] + ".scaleX" ) ( $bindJnt[ 2 ] + ".scaleY" ) ( $bindJnt[ 2 ] + ".scaleZ" );
+    
+    // For loop forces the connection between the neck normalized scale
+    // and animation curves for the straight joints.
+    string $scale[] = { "_scaleX", "_scaleY", "_scaleZ" };
+    for ( $i = 0; $i < 3; $i++ )
+    {
+        connectAttr -f ( $neckNormScale + ".outputX" ) ( $bindJnt[ 0 ] + $scale[ $i ] + ".input" );
+        connectAttr -f ( $neckNormScale + ".outputX" ) ( $bindJnt[ 2 ] + $scale[ $i ] + ".input" );
+    }
+    
+    // Binds the straight joints to the neck curve.
+    skinCluster $bindJnt[ 0 ] $bindJnt[ 1 ] $bindJnt[ 2 ] $ikHandle[ 2 ];
+    
+    // Removes inherits transform on the neck curve.
+    setAttr ( $ikHandle[ 2 ] + ".inheritsTransform" ) 0;
+    
+    // Set up the advanced twist controls for the spline ik.
+    setAttr ( $ikHandle[ 0 ] + ".dTwistControlEnable" ) 1;
+    setAttr ( $ikHandle[ 0 ] + ".dWorldUpType" ) 4;
+    setAttr ( $ikHandle[ 0 ] + ".dWorldUpVectorY" ) 0;
+    setAttr ( $ikHandle[ 0 ] + ".dWorldUpVectorEndY" ) 0;
+    setAttr ( $ikHandle[ 0 ] + ".dWorldUpVectorZ" ) -1;
+    setAttr ( $ikHandle[ 0 ] + ".dWorldUpVectorEndZ" ) -1;
+    connectAttr ( "torso_ctrl.worldMatrix" ) ( $ikHandle[ 0 ] + ".dWorldUpMatrix" );
+    connectAttr ( $headCtrl + ".worldMatrix" ) ( $ikHandle[ 0 ] + ".dWorldUpMatrixEnd" );
+    
+    // Cleans up the neck ctrl.
+    for ( $i = 0; $i < 10; $i++ )
+    {
+        if ( ( $i < 3 ) || ( $i > 5 ) ) setAttr -l 1 -k 0 -cb 0 ( "neck_ctrl" + $attrs[ $i ] );
+    }
+    
+    // Cleans up the head ctrl.
+    for ( $i = 0; $i < 10; $i++ )
+    {
+        if ( $i > 5 ) setAttr -l 1 -k 0 -cb 0 ( "head_ctrl" + $attrs[ $i ] );
+    }
+    
+    // Hides nodes that don't need to be seen by the animator.
+    hide $headWSGrp $headBSGrp $headTSGrp $headNSGrp $neckCtrlGrpConst $neckDNT $neckStartDist $neckEndDist; 
+    select -cl;
+}
+
+////////////////////////////////////////////////////////////
+///////////////////// Procedure: spine /////////////////////
+////////////////////////////////////////////////////////////
+//                                                        //
+//     This procedure rigs the spine for the character.   //
+// Creating all the joints, controls and attribute        //
+// connections.                                           //
+
+proc spine( string $charTxt, string $spineButton, string $neckButton )
+{
+    // Disables the spine button, enables the neck button and queries the character name.
+    button -e -en 0 $spineButton;
+    button -e -en 1 $neckButton;
+    string $charName = `textFieldButtonGrp -q -tx $charTxt`;
+    
+    // Setting up initial variables.
+    string $selJnt[];
+    string $locators[] = { "hip", "torso", "global" };
+    vector $hipLoc = `getAttr hip_loc.t`;
+    vector $torsoLoc = `getAttr torso_loc.t`;
+    vector $globalLoc = `getAttr global_loc.t`;
+    string $bindSet = "skinBind_jnts";
+    string $attrs[] = { ".tx", ".ty", ".tz", ".rx", ".ry", ".rz", ".sx", ".sy", ".sz", ".v" };
+    
+    // Spine start and end joints.
+    select -cl;
+    $selJnt[ 0 ] = `joint -p ( $hipLoc.x ) ( $hipLoc.y ) ( $hipLoc.z ) -n ( "spine_1_jnt" ) -rad 0.5`;
+    $selJnt[ 1 ] = `joint -p ( $torsoLoc.x ) ( $torsoLoc.y ) ( $torsoLoc.z ) -n ( "spine_end_jnt" ) -rad 0.5`;
+    
+    // Creates the hip and torso joints and adds them to the select set.
+    select -cl;
+    $selJnt[ 2 ] = `joint -p ( $hipLoc.x ) ( $hipLoc.y ) ( $hipLoc.z ) -n ( $locators[ 0 ] + "_jnt" ) -rad 0.4`;
+    sets -e -add $bindSet $selJnt[ 2 ];
+    select -cl;
+    $selJnt[ 3 ] = `joint -p ( $torsoLoc.x ) ( $torsoLoc.y ) ( $torsoLoc.z ) -n ( $locators[ 1 ] + "_jnt" ) -rad 0.4`;
+    sets -e -add $bindSet $selJnt[ 3 ];
+    
+    // gets the positions of the start and end joints.
+    vector $sjPos = ( `joint -q -p $selJnt[ 0 ]` );
+    vector $ejPos = ( `joint -q -p $selJnt[ 1 ]` );
+    string $crJnt[];
+    float $radius = ( `getAttr ( $selJnt[ 0 ] + ".radius" )` );
+    
+    // Input an integer for the TOTAL number of segments you need, for $seg.
+    int $seg = 6;
+    select -cl;
+    
+    // For loop creates joints in the proper position
+    // and assigns them to an array and parents the first created joint
+    // to the start joint and parents the end joint to the last created joint.
+    for ( $i = $seg; $i > 1; $i-- )
+    {
+        int $x = abs ( $i - $seg );
+        $crJnt[ $x ] = `joint -p ( ( ( ( ( $sjPos.x ) - ( $ejPos.x ) ) / $seg ) * ( $i - 1 ) ) + ( $ejPos.x ) )
+                                 ( ( ( ( ( $sjPos.y ) - ( $ejPos.y ) ) / $seg ) * ( $i - 1 ) ) + ( $ejPos.y ) )
+                                 ( ( ( ( ( $sjPos.z ) - ( $ejPos.z ) ) / $seg ) * ( $i - 1 ) ) + ( $ejPos.z ) ) -n ( "spine_" + ( $x + 2 ) + "_jnt" ) -rad $radius`;
+        
+        if ( $x==0 )
+        {
+            parent $crJnt[ $x ] $selJnt[ 0 ];
+        }
+        
+        if ( ( $x + 1 ) == ( $seg - 1 ) )
+        {
+            parent $selJnt[ 1 ] $crJnt[ $x ];
+        }
+    }
+    
+    // Adds created joints to the selection set.
+    sets -e -add $bindSet $crJnt;
+    joint -e -oj xyz -sao zdown -zso -ch $selJnt[ 0 ];
+    
+    // Gets the positions of the 3rd and 5th spine joint.
+    vector $spine3 = `joint -q -p $crJnt[ 1 ]`;
+    vector $spine5 = `joint -q -p $crJnt[ 3 ]`;
+    
+    // Calls circleOneArrow proc to makes the torso ctrl.
+    circleOneArrow ;
+    string $torso = "nurbsCircle1";
+    $torso = `rename $torso "torso_ctrl"`;
+    setAttr ( $torso + ".rz" ) -90;
+    setAttr ( $torso + ".t" ) ( $ejPos.x ) ( $ejPos.y ) 0;
+    select $torso;
+    scale -xz 1.2 1.2;
+    move -a ( $ejPos.x ) ( $ejPos.y ) ( $ejPos.z ) $torso;
+    makeIdentity -a 1 -t 1 -r 1 -s 1 $torso;
+    delete -ch $torso;
+    for ( $i = 0; $i < 10; $i++ )
+    {
+        if ( $i > 5 ) setAttr -l 1 -k 0 -cb 0 ( $torso + $attrs[ $i ] );
+    }
+    
+    // Creates the hip ctrl.
+    circle -c 0 0 0 -nr 0 1 0 -sw 360 -r 1 -d 3 -ut 0 -tol 0.01 -s 8 -ch 1 -n "hip_ctrl";
+    select -r hip_ctrl.cv[ 2 ] hip_ctrl.cv[ 4 ] hip_ctrl.cv[ 0 ] hip_ctrl.cv[ 6 ] ;
+    move -r -os -wd 0 -0.614947 0 ;
+    select -cl  ;
+    string $hip = "hip_ctrl";
+    select $hip;
+    move -rpr ( $sjPos.x ) ( $sjPos.y ) 0;
+    scale -xyz 2.3 2.3 2.3 $hip;
+    move -a  ( $sjPos.x ) ( $sjPos.y ) ( $sjPos.z ) $hip;
+    makeIdentity -a 1 -t 1 -s 1 $hip;
+    delete -ch $hip;
+    for ( $i = 0; $i < 10; $i++ )
+    {
+        if ( ( $i < 3 ) || ( $i > 5 ) ) setAttr -l 1 -k 0 -cb 0 ( $hip+$attrs[ $i ] );
+    }
+    
+    // Creates the upperBody ctrl.
+    circle -c 0 0 0 -nr 0 1 0 -sw 360 -r 1 -d 3 -ut 0 -tol 0.01 -s 8 -ch 1 -n "upperBody_ctrl";
+    move -rpr ( $sjPos.x ) ( $sjPos.y ) 0;
+    string $upperBody = "upperBody_ctrl";
+    scale -xz 2.5 2.5;
+    move -a ( $sjPos.x ) ( $sjPos.y ) ( $sjPos.z ) $upperBody;
+    makeIdentity -a 1 -t 1 -s 1 $upperBody;
+    delete -ch $upperBody;
+    for ( $i = 0; $i < 10; $i++ )
+    {
+        if ( $i > 5 ) setAttr -l 1 -k 0 -cb 0 ( $upperBody + $attrs[ $i ] );
+    }
+    
+    // Creates the lowerTorso ctrl.
+    circle -c 0 0 0 -nr 0 1 0 -sw 360 -r 1 -d 3 -ut 0 -tol 0.01 -s 8 -ch 1 -n "lowerTorso_ctrl";
+    move -rpr ( $spine3.x ) ( $spine3.y ) 0;
+    string $lowerTorso = "lowerTorso_ctrl";
+    scale -xz 2.8 2.8;
+    move -a ( $spine3.x ) ( $spine3.y ) ( $spine3.z ) $lowerTorso;
+    makeIdentity -a 1 -t 1 -s 1 $lowerTorso;
+    delete -ch $lowerTorso;
+    for ( $i = 0; $i < 10; $i++ )
+    {
+        if ( ( $i < 3 ) || ( $i > 5 ) ) setAttr -l 1 -k 0 -cb 0 ( $lowerTorso + $attrs[ $i ] );
+    }
+    
+    // Creates the upperTorso ctrl.
+    circle -c 0 0 0 -nr 0 1 0 -sw 360 -r 1 -d 3 -ut 0 -tol 0.01 -s 8 -ch 1 -n "upperTorso_ctrl";
+    move -rpr ( $spine5.x ) ( $spine5.y ) 0;
+    string $upperTorso = "upperTorso_ctrl";
+    scale -xz 2.3 2.3;
+    move -a ( $spine5.x ) ( $spine5.y ) ( $spine5.z ) $upperTorso;
+    makeIdentity -a 1 -t 1 -s 1 $upperTorso;
+    delete -ch $upperTorso;
+    for ( $i = 0; $i < 10; $i++ )
+    {
+        if ( ( $i < 3 ) || ( $i > 5 ) ) setAttr -l 1 -k 0 -cb 0 ( $upperTorso + $attrs[ $i ] );
+    }
+    
+    // Parents the ctrls.
+    parent $upperTorso $lowerTorso;
+    parent $lowerTorso $upperBody;
+    
+    // For loop creates the global ctrl, using the
+    // circleOneArrow proc multiple times and adding 
+    // the shapes to the first.
+    for ( $i = 1; $i < 5; $i++ )
+    {
+        circleOneArrow;
+        rename nurbsCircle1 ( "circle" + $i );
+        delete -ch ( "circle" + $i );
+        
+        if ( $i > 1 )
+        {
+            setAttr ( "circle" + $i + ".ry" ) ( 90 * ( $i - 1 ) );
+            makeIdentity -a 1 -r 1 ( "circle" + $i );
+            parent -add -s ( "circleShape" + $i ) circle1;
+            delete ( "circle" + $i );
+        }
+    }
+    
+    // Positions the global ctrl.
+    string $globalCtrl = "circle1";
+    $globalCtrl = `rename $globalCtrl ( $charName + "_global_ctrl" )`;
+    select $globalCtrl;
+    move -rpr ( $globalLoc.x ) ( $globalLoc.y ) ( $globalLoc.z );
+    scale -xz 3 3;
+    makeIdentity -a 1 -t 1 -s 1 $globalCtrl;
+    
+    // Adds the global scale attribute to the global ctrl.
+    addAttr -ln globalScale -dv 1 -k 1 $globalCtrl;
+    connectAttr ( $globalCtrl + ".globalScale" ) ( $globalCtrl + ".sx" );
+    connectAttr ( $globalCtrl + ".globalScale" ) ( $globalCtrl + ".sy" );
+    connectAttr ( $globalCtrl + ".globalScale" ) ( $globalCtrl + ".sz" );
+    setAttr -l 1 -k 0 -cb 0 ( $globalCtrl + ".sx" );
+    setAttr -l 1 -k 0 -cb 0 ( $globalCtrl + ".sy" );
+    setAttr -l 1 -k 0 -cb 0 ( $globalCtrl + ".sz" );
+    
+    // Creates a spline ik for the spine and creates the curve info node
+    string $ikHandle[] = `ikHandle -sj $selJnt[ 0 ] -ee $selJnt[ 1 ] -sol ikSplineSolver -n spine_ikHandle`;
+    $ikHandle[ 1 ] = `rename $ikHandle[ 1 ] ( $ikHandle[ 0 ] + "_eff" )`;
+    $ikHandle[ 2 ] = `rename $ikHandle[ 2 ] spine_curve`;
+    string $spineInfo = `arclen -ch 1 $ikHandle[ 2 ]`;
+    $spineInfo = `rename $spineInfo spine_curveInfo`;
+    float $spineLengthNorm = `getAttr ( $spineInfo + ".arcLength" )`;
+    
+    // Turns of inherits transform on the spine curve.
+    setAttr ( $ikHandle[ 2 ] + ".inheritsTransform" ) 0;
+    
+    // Sets up the advanced twist controls for the spine ik.
+    setAttr ( $ikHandle[ 0 ] + ".dTwistControlEnable" ) 1;
+    setAttr ( $ikHandle[ 0 ] + ".dWorldUpType" ) 4;
+    setAttr ( $ikHandle[ 0 ] + ".dWorldUpVectorY" ) 0;
+    setAttr ( $ikHandle[ 0 ] + ".dWorldUpVectorEndY" ) 0;
+    setAttr ( $ikHandle[ 0 ] + ".dWorldUpVectorZ" ) -1;
+    setAttr ( $ikHandle[ 0 ] + ".dWorldUpVectorEndZ" ) -1;
+    connectAttr ( $hip + ".worldMatrix" ) ( $ikHandle[ 0 ] + ".dWorldUpMatrix" );
+    connectAttr ( $torso + ".worldMatrix" ) ( $ikHandle[ 0 ] + ".dWorldUpMatrixEnd" );
+    
+    // Constraining the hip and torso joints to their respective ctrls.
+    parentConstraint $hip $selJnt[ 2 ];
+    parentConstraint $torso $selJnt[ 3 ];
+    
+    // Creates the groups.
+    string $group[];
+    $group[ 0 ] = `group -em -n "body_ctrl_grp"`;
+    $group[ 1 ] = `group -n "body_fk_ctrl_grp" -p $group[ 0 ] $upperBody`;
+    xform -os -piv 0 0 0;
+    $group[ 2 ] = `group -n ( $hip + "_grp" ) -p $group[ 0 ] $hip`;
+    xform -os -piv ( $sjPos.x ) ( $sjPos.y ) ( $sjPos.z );
+    $group[ 3 ] = `group -n ( $torso + "_grp" ) -p $group[ 0 ] $torso`;
+    xform -os -piv ( $ejPos.x ) ( $ejPos.y ) ( $ejPos.z);
+    $group[ 4 ] = `group -n "spine_grp" $selJnt[ 0 ] $selJnt[ 2 ] $selJnt[ 3 ]`;
+    xform -os -piv 0 0 0;
+    $group[ 5 ] = `group -n "spine_doNotTouch_grp" $ikHandle[ 0 ] $ikHandle[ 2 ]`;
+    xform -os -piv 0 0 0;
+    $group[ 6 ] = `group -n ( $charName + "_ctrl_grp" ) -p $globalCtrl $group[ 0 ] $group[ 4 ] $group[ 5 ]`;
+    
+    // Constrains the hip and torso grps to the body and upper torso ctrls.
+    parentConstraint -mo $upperBody $group[ 2 ];
+    parentConstraint -mo $upperTorso $group[ 3 ];
+    
+    // Skines the spine curve to the hip and torso joints.
+    skinCluster $selJnt[ 2 ] $selJnt[ 3 ] $ikHandle[ 2 ];
+    
+    // Creates the settings grp and adds the backStretch attribute.
+    $group[ 7 ] = `group -em -n ( $charName + "_settings_grp" ) -p $globalCtrl`;
+    for ( $i = 0; $i < 10; $i++ )
+    {
+        setAttr -l 1 -k 0 -cb 0 ( $group[ 7 ] + $attrs[ $i ] );
+    }
+    
+    addAttr -ln backStretch -dv 1 -k 1 $group[ 7 ];
+    
+    // Sets keys for the backStretch attribute.
+    setKeyframe -t 1 -v 1 ( $group[ 7 ] + ".backStretch" );
+    setKeyframe -t 6 -v 1 ( $group[ 7 ]+".backStretch" );
+    keyTangent -e -a -t 1 -oa 77 -ow 1 ( $group[ 7 ] + ".backStretch" );
+    keyTangent -e -a -t 6 -ia -55 -ow 1 ( $group[ 7 ] + ".backStretch" );
+    
+    // Adds power attribute to the spine joints and 
+    // creates the frame cache nodes for the spine joints and connects
+    // them to the spines joints pow attributes.
+    for ( $i = 1; $i < 7; $i++ )
+    {
+        addAttr -ln "pow" -k 1 ( "spine_" + $i + "_jnt" );
+        shadingNode -au frameCache -n ( "spine_" + $i + "_frameCache" );
+        setAttr ( "spine_" + $i + "_frameCache.varyTime" ) $i;
+        connectAttr ( $group[ 7 ]+".backStretch" ) ( "spine_" + $i + "_frameCache.stream" );
+        connectAttr ( "spine_" + $i + "_frameCache.varying" ) ( "spine_" + $i + "_jnt.pow" );
+    }
+    
+    // Creates the expression for the spine joints.
+    string $expr = ( "$normal = " + $spineInfo + ".arcLength / " + $globalCtrl + ".globalScale ;\n" +
+                     "$scale = $normal / " + $spineLengthNorm + ";\n" +
+                     "$inv = 1 / sqrt( $scale ) ;\n" );
+    for ( $i = 1; $i < 7; $i++ )
+    {
+        $expr += ( "spine_" + $i+ "_jnt.sx = $scale ;\n" +
+                   "spine_" + $i + "_jnt.sy = pow( $inv,spine_"+$i+"_jnt.pow ) ;\n" +
+                   "spine_" + $i + "_jnt.sz = pow( $inv,spine_" + $i + "_jnt.pow ) ;\n" );
+    }
+    
+    expression -n "back_stretch" -s $expr;
+    
+    // Creates the character geo grp.
+    group -n ( $charName+"_geo_grp" ) -p $globalCtrl -em;
+    
+    // Hides nodes that don't need to be seen by the animator.
+    hide $group[ 5 ];
+    select -cl;
+}
+
+////////////////////////////////////////////////////////////
+///////////////// Procedure: circleOneArrow ////////////////
+////////////////////////////////////////////////////////////
+//                                                        //
+//     This procedure creates the curve that is used for  //
+// the global control and torso control.                  //
+
+proc circleOneArrow ()
+{
+    circle -c 0 0 0 -nr 0 1 0 -sw 360 -r 1 -d 3 -ut 0 -tol 0.01 -s 8 -ch 1;
+    insertKnotCurve -ch 1 -cos on -nk 1 -add 1 -ib 0 -rpo 1  nurbsCircle1.u[ 3.52925230366488 ] nurbsCircle1.u[ 4.49813938939366 ];
+    select -cl  ;
+    move -r -os -wd 0 0 0.974629 nurbsCircle1.cv[ 6 ];
+    insertKnotCurve -ch 1 -cos on -nk 1 -add 1 -ib 0 -rpo 1
+        nurbsCircle1.u[ 3.52598188091927 ] nurbsCircle1.u[ 4.46805625096428 ] nurbsCircle1.u[ 3.59280657983577 ]
+        nurbsCircle1.u[ 4.39392776408716 ] nurbsCircle1.u[ 4.06840938886799 ] nurbsCircle1.u[ 3.92979615398919 ]
+        nurbsCircle1.u[ 3.85844362514615 ] nurbsCircle1.u[ 4.15186051711318 ] nurbsCircle1.u[ 3.76581400743692 ]
+        nurbsCircle1.u[ 4.24250665744479 ] nurbsCircle1.u[ 3.71122961366576 ] nurbsCircle1.u[ 4.29777691966406 ];
+    move -r -os -wd -0.19739 0 0 nurbsCircle1.cv[ 6:8 ];
+    move -r -os -wd 0.0456708 0 -0.259252 nurbsCircle1.cv[ 6 ];
+    move -r -os -wd -0.0596628 0 0 nurbsCircle1.cv[ 8 ];
+    move -r -os -wd 0.147498 0 -0.272523 nurbsCircle1.cv[ 18 ];
+    move -r -os -wd 0.197007 0 0 nurbsCircle1.cv[ 17 ];
+    move -r -os -wd 0.253897 0 0 nurbsCircle1.cv[ 16 ];
+    move -r -os -wd -0.325064 0 0 nurbsCircle1.cv[ 9 ];
+    move -r -os -wd 0.315789 0 0 nurbsCircle1.cv[ 15 ];
+    move -r -os -wd 0 0 0.336547 nurbsCircle1.cv[ 12 ];
+    move -r -os -wd 0 0 0.236395 nurbsCircle1.cv[ 11 ] nurbsCircle1.cv[ 13 ];
+    move -r -os -wd 0 0 0.299215 nurbsCircle1.cv[ 10 ] nurbsCircle1.cv[ 14 ];
+    scale -r -p 0.00219073cm 0cm 1.875649cm 3.60206 1 1 nurbsCircle1.cv[ 10 ] nurbsCircle1.cv[ 14 ];
+    scale -r -p 0.00219073cm 0cm 1.875649cm 2.246504 1 1 nurbsCircle1.cv[ 10 ] nurbsCircle1.cv[ 14 ];
+    move -r -os -wd 0 0 -0.54371 nurbsCircle1.cv[ 10 ] nurbsCircle1.cv[ 14 ];
+    move -r -os -wd 0 0 0.0472791 nurbsCircle1.cv[ 11 ] nurbsCircle1.cv[ 13 ];
+    move -r -os -wd 0 0 -0.0709186 nurbsCircle1.cv[ 9 ] nurbsCircle1.cv[ 15 ];
+    scale -r -p -0.00108229cm 0cm 1.145404cm 0.598983 1 1 nurbsCircle1.cv[ 5:9 ] nurbsCircle1.cv[ 15:19 ];
+    move -r -os -wd 0 0 0.0472791 nurbsCircle1.cv[ 5:6 ] nurbsCircle1.cv[ 18:19 ];
+}
+
+////////////////////////////////////////////////////////////
+//////////////////// Procedure: locators ///////////////////
+////////////////////////////////////////////////////////////
+//                                                        //
+//     This procedure creates the locators that are used  //
+// for placeing the rest of the rig.  The locators can be //
+// moved, after creation, to where they need to be for    //
+// rest of the rig.                                       // 
+
+proc locators( string $locButton, string $spineButton )
+{
+    // Disables the locators button and enables the spine button.
+    button -e -en 0 $locButton;
+    button -e -en 1 $spineButton;
+    
+    // Sets up initial variables.
+    string $selJnt[];
+    string $locators[] = { "hip", "torso", "global", "neck", "head" };
+    vector $hipLoc = << 0, -2.203, -0.461 >>;
+    vector $torsoLoc = << 0, 0.659, -0.461 >>;
+    vector $globalLoc = << 0, -6.254, 0 >>;
+    vector $neckLoc = << 0, 1.39, -0.461 >>;
+    vector $headLoc = << 0, 2.141, -0.203 >>;
+    
+    // Creates the locators.
+    for ( $i = 0; $i < ( size ( $locators ) ); $i++ )
+    {
+        spaceLocator -n ( $locators[ $i ]+"_loc" );
+    }
+    
+    // Positions the locators.
+    select -cl;
+    setAttr hip_loc.t ( $hipLoc.x ) ( $hipLoc.y ) ( $hipLoc.z );
+    setAttr torso_loc.t ( $torsoLoc.x ) ( $torsoLoc.y ) ( $torsoLoc.z );
+    setAttr global_loc.t ( $globalLoc.x ) ( $globalLoc.y ) ( $globalLoc.z );
+    setAttr neck_loc.t ( $neckLoc.x ) ( $neckLoc.y ) ( $neckLoc.z );
+    setAttr head_loc.t ( $headLoc.x ) ( $headLoc.y ) ( $headLoc.z );
+    
+    // Creaets the skinBind joints selection set.
+    string $bindSet = `sets -n skinBind_jnts -em`;
+    
+    select -cl;
+    
+    // Dialog box tells user to place locators where they need them.
+    confirmDialog -t "Place Locators" -m "The locators have been created.\nYou may now place them where\nyou need them." 
+                  -ma "center" -b "OK" -db "OK" -cb "OK" -ds "OK" -icn "information";
+}
+
+////////////////////////////////////////////////////////////
+///////////////////// Procedure: reset /////////////////////
+////////////////////////////////////////////////////////////
+//                                                        //
+//     This procedure resets the tool so it can be        //
+// reused without calling the window again.               //
+
+proc reset( string $charName, string $editName, string $locators, string $spine, string $neck )
+{
+    textFieldButtonGrp -e -ed 1 -tx "" $charName;
+    button -e -en 0 $editName;
+    button -e -en 0 $locators;
+    button -e -en 0 $spine;
+    button -e -en 0 $neck;
+}
+
+////////////////////////////////////////////////////////////
+//////////////////// Procedure: editName ///////////////////
+////////////////////////////////////////////////////////////
+//                                                        //
+//     This procedure allows the user to edit the name    //
+// and deactivates the buttons for creation so the user   //
+// doesn't accidentally press them while editing.         //
+
+proc editName( string $characterName, string $editName, string $locators )
+{
+    textFieldButtonGrp -e -ed 1 $characterName;
+    button -e -en 0 $editName;
+    button -e -en 0 $locators;
+}
+
+////////////////////////////////////////////////////////////
+/////////////////// Procedure: validName ///////////////////
+////////////////////////////////////////////////////////////
+//                                                        //
+//     This procedure checks if the name is valid and     //
+// substrings the name to 16 characters.                  //
+
+proc validName( string $characterName, string $editName, string $locators )
+{
+    string $testString = `textFieldButtonGrp -q -tx $characterName`;
+    
+    // If name is more than 16 characters then substring the first 16.
+    int $size = size( $testString );
+    if ( $size > 16 )
+    {
+        $testString = `substring $testString 1 16`;
+        textFieldButtonGrp -e -tx $testString $characterName;
+    }
+    
+    // Returns the valid characters in the name.
+    string $matchingPart = `match "^[a-zA-Z][0-9a-zA-Z_]*$" $testString`;
+    
+    // If matched name is the same as name goodmatch = 1 else 0.
+    int $goodMatch = ! `strcmp $matchingPart $testString`;
+    
+    // If no name is given then goodmatch is 0.
+    if ( $testString == "" )
+    {
+        $goodMatch = 0;
+    }
+    
+    // If goodmatch is 1 then disable textField and enable edit name and create buttons.
+    // Else give warning.
+    if ( $goodMatch )
+    {
+        textFieldButtonGrp -e -ed 0 $characterName;
+        button -e -en 1 $editName;
+        button -e -en 1 $locators;
+    }
+    else
+    {
+        confirmDialog -t "Warning" -m "Invalid character name." -ma "center" -b "OK" -db "OK" -cb "OK" -ds "OK" -icn "warning";
+    }
+}
+
+////////////////////////////////////////////////////////////
+/////////////////// Procedure: validName ///////////////////
+////////////////////////////////////////////////////////////
+//                                                        //
+//     This procedure substrings the name to 16           //
+// characters if name was greater than 16 characters.     //
+
+proc sizeName( string $characterName )
+{
+    string $testString = `textFieldButtonGrp -q -tx $characterName`;
+    int $size = size( $testString );
+    if ( $size > 16 )
+    {
+        $testString = `substring $testString 1 16`;
+        textFieldButtonGrp -e -tx $testString $characterName;
+    }
+}
+
+////////////////////////////////////////////////////////////
+////////////////// Procedure: autoSpineUI //////////////////
+////////////////////////////////////////////////////////////
+//                                                        //
+//     This is the main call procedure.  It sets up and   //
+// creates the UI for rigging the spine and neck for a    //
+// biped character.                                       //
+
+global proc autoRigUI()
+{
+    // If the window exists it deletes it when this procedure
+    // is ran.
+    if ( `window -q -ex autoRig` ) deleteUI autoRig;
+    
+    global string $characterName;
+    global string $editName;
+    global string $locators;
+    global string $spine;
+    global string $neck;
+    global string $reset;
+    string $dialogBoxWindow = `window -t "Auto Rigger" -rtf 1 autoRig`;
+    
+    columnLayout -adj 1;
+        frameLayout -l "Name";
+            columnLayout -adj 1;
+                
+                // TextField is to name character, on change the text is dropped to 16 characters if it was more.
+                // Check name button checks if the name is valid.
+                // Edit name button allows user to edit the entered name.
+                $characterName = `textFieldButtonGrp -l "Character Name" -cc "sizeName( $characterName )" -bl "Check Name" -bc "validName( $characterName, $editName, $locators )"`;
+                $editName = `button -en 0 -l "Edit Name" -c "editName( $characterName, $editName, $locators )"`;
+            setParent ..;
+        setParent ..;
+        
+        frameLayout -l "Rig";
+            columnLayout -adj 1;
+                rowColumnLayout -nc 3;
+                    $locators = `button -en 0 -l "Create Locators" -c "locators( $locators, $spine )"`;
+                    $spine = `button -en 0 -l "Rig Spine" -c "spine( $characterName, $spine, $neck )"`;
+                    $neck = `button -en 0 -l "Rig Neck" -c "neck( $characterName, $neck )"`;
+                setParent ..;
+            setParent ..;
+        setParent ..;
+        
+        columnLayout -adj 1;
+            $reset = `button -l "Reset Tool" -c "reset( $characterName, $editName, $locators, $spine, $neck )"`;
+            
+    showWindow $dialogBoxWindow;
+}

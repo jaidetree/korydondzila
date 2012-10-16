@@ -1,0 +1,62 @@
+.contact-info .contact
+  :width 348px
+  :height 348px
+  :position relative
+  :z-index 1
+  @include perspective(1000)
+
+  .box 
+    :width 100%
+    :height 100%
+    @include box-sizing(border-box)
+    @include transform-style(preserve-3d)
+    @include transition(all, 600ms, ease)
+
+  &:hover .box, .active .box
+    @include transform-y(rotateY(180deg))
+
+  .face 
+    :position absolute
+    :width 100%
+    :height 100%
+    :background #171b1c url(../images/contact_info_spiral.png)
+    @include backface-visibility(hidden)
+    &.back 
+      :display block
+      @include transform-y(rotateY(180deg))
+      :background #171b1c
+
+.ui-nav 
+  .works, .reel, .about
+    :position relative
+    :z-index 1
+    @include perspective(1000)
+
+    &.works .face
+      :background #171b1c url(../images/works_spiral.png)
+
+    &.reel .face
+      :background #171b1c url(../images/reel_spiral.png)
+
+    &.about .face
+      :background #171b1c url(../images/about_spiral.png)
+
+    .box 
+      :width 100%
+      :height 100%
+      @include box-sizing(border-box)
+      @include transform-style(preserve-3d)
+      @include transition(all, 600ms, ease)
+
+    &:hover .box, &.active .box
+      @include transform-y(rotateY(180deg))
+
+    .face 
+      :position absolute
+      :width 100%
+      :height 100%
+      @include backface-visibility(hidden)
+      &.back 
+        :display block
+        @include transform-y(rotateY(180deg))
+        :background #171b1c

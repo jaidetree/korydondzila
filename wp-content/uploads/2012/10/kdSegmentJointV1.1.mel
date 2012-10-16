@@ -1,0 +1,186 @@
+//////////////////////////////////////////////////////////////////////////
+///                                                                    ///
+/// SCRIPT:           kdSegmentJointV1.1.mel - MEL Script              ///
+///                                                                    ///
+/// AUTHOR:           Kory Dondzila - kory@korydondzila.com            ///
+///                   www.korydondzila.com                             ///
+///                                                                    ///
+/// DESCRIPTION:           Divides the selected joint into equal       ///
+///                   segments.                                        ///
+///                                                                    ///
+/// USAGE:            Source script then run: segmentJointUI();        ///
+///                                                                    ///
+/// EDITS TO DO:      N/A                                              ///
+///                                                                    ///
+/// THINGS TO ADD:    N/A                                              ///
+///                                                                    ///
+/// VERSIONS:         1.0 - Oct 26, 2011 - Initial Release             ///
+///                   1.1 - Jul 31, 2012 - Fixed error and coding.     ///
+///                                                                    ///
+//////////////////////////////////////////////////////////////////////////
+
+// This is the procedure that segments the joint.
+proc segment( string $segmentField, string $orient1, string $orient2, string $orient3, string $orient4 )
+{
+    // Gets the selected joints, procedure returns if
+    // no joints are selected or there is no child joints.
+    string $selJnt[] = `ls -typ "joint" -sl -dag`;
+    if ( size( $selJnt ) == 0 )
+    {
+        confirmDialog -t "Warning" -m "No joint was selected." -ma "center" -b "OK" -db "OK" -cb "OK" -ds "OK" -icn "warning";
+        return;
+    }
+    else if ( size( $selJnt ) == 1 )
+    {
+        confirmDialog -t "Warning" -m "Only one joint was selected.\nSelect a joint with a child joint." -ma "center" -b "OK" -db "OK" -cb "OK" -ds "OK" -icn "warning";
+        return;
+    }
+    
+    // Gets the number of segments from the UI.
+    int $seg = `intSliderGrp -q -v $segmentField`;
+    
+    // Gets the selected orientation.
+    int $whichOrient1 = `radioButtonGrp -q -sl $orient1`;
+    int $whichOrient2 = `radioButtonGrp -q -sl $orient2`;
+    string $jntOrient;
+    
+    // If the first button grp has a button selected
+    // assign a string based on case.  Else go to the second
+    // button grp.
+    if ( $whichOrient1 > 0 )
+    {
+        switch ( $whichOrient1 )
+        {
+            case 1:
+                $jntOrient = "xyz";
+                break;
+            case 2:
+                $jntOrient = "yxz";
+                break;
+            case 3:
+                $jntOrient = "zxy";
+                break;
+            case 4:
+                $jntOrient = "none";
+                break;
+        }
+    }
+    else
+    {
+        switch ( $whichOrient2 )
+        {
+            case 1:
+                $jntOrient = "xzy";
+                break;
+            case 2:
+                $jntOrient = "yzx";
+                break;
+            case 3:
+                $jntOrient = "zyx";
+                break;
+        }
+    }
+    
+    // Gets the selected second axis orientation.
+    int $whichOrient3 = `radioButtonGrp -q -sl $orient3`;
+    int $whichOrient4 = `radioButtonGrp -q -sl $orient4`;
+    string $secOrient;
+    
+    // If the third button grp has a button selected
+    // assign a string based on case.  Else go to the fourth
+    // button grp.
+    if ( $whichOrient3 > 0 )
+    {
+        switch ( $whichOrient3 )
+        {
+            case 1:
+                $secOrient = "xup";
+                break;
+            case 2:
+                $secOrient = "yup";
+                break;
+            case 3:
+                $secOrient = "zup";
+                break;
+        }
+    }
+    else
+    {
+        switch ( $whichOrient4 )
+        {
+            case 1:
+                $secOrient = "xdown";
+                break;
+            case 2:
+                $secOrient = "ydown";
+                break;
+            case 3:
+                $secOrient = "zdown";
+                break;
+        }
+    }
+    
+    // Gets the positions of the selected joint and it's child joint.
+    vector $sjPos = ( `joint -q -p $selJnt[ 0 ]` );
+    vector $ejPos = ( `joint -q -p $selJnt[ 1 ]` );
+    string $crJnt[];
+    float $radius = ( `getAttr ( $selJnt[ 0 ]+".radius" )` );
+    
+    // Input an integer for the TOTAL number of segments you need, for $seg.
+    select -cl;
+    
+    // For loop creates joints in the proper position
+    // and assigns them to an array and parents the first created joint
+    // to the start joint and parents the end joint to the last created joint.
+    for ( $i = $seg; $i > 1; $i-- )
+    {
+        int $x = abs ( $i - $seg );
+        $crJnt[ $x ] = `joint -p ( ( ( ( ( $sjPos.x ) - ( $ejPos.x ) ) / $seg ) * ( $i - 1 ) ) + ( $ejPos.x ) )
+                                 ( ( ( ( ( $sjPos.y ) - ( $ejPos.y ) ) / $seg ) * ( $i - 1 ) ) + ( $ejPos.y ) )
+                                 ( ( ( ( ( $sjPos.z ) - ( $ejPos.z ) ) / $seg ) * ( $i - 1 ) ) + ( $ejPos.z ) ) -rad $radius`;
+        if ( $x == 0 )
+            parent $crJnt[ $x ] $selJnt[ 0 ];
+        if ( ( $x + 1 ) == ( $seg - 1 ) )
+            parent $selJnt[ 1 ] $crJnt[ $x ];
+    }
+    
+    // Orients the joints.
+    joint -e -oj $jntOrient -sao $secOrient -zso -ch $selJnt[ 0 ];
+}
+
+// Main call procedure, sets up and creates the window.
+global proc segmentJointUI()
+{
+    // If window exists then delete it.  Prevents multiple instances of the
+    // same window.
+    if ( `window -q -ex segJoint` ) deleteUI segJoint;
+    
+    // Declares global strings.
+    global string $segmentField;
+    global string $orient1;
+    global string $orient2;
+    global string $orient3;
+    global string $orient4;
+    
+    // Makes window size to everything in it.
+    string $dialogBoxWindow = `window -t "Segment Joint" -rtf 1 segJoint`;
+    
+    columnLayout -adj 1;
+        frameLayout -l "Segments";
+            $segmentField = `intSliderGrp -l "Segments" -f 1 -min 2 -max 10 -fmx 100 -v 3`;
+        setParent ..;
+        
+        frameLayout -l "Orientation";
+            $orient1 = `radioButtonGrp -nrb 4 -sl 1 -la4 "xyz" "yxz" "zxy" "None"`;
+            $orient2 = `radioButtonGrp -nrb 3 -scl $orient1 -la3 "xzy" "yzx" "zyx"`;
+        setParent ..;
+        frameLayout -l "Second Axis Orientation";
+            $orient3 = `radioButtonGrp -nrb 3 -sl 1 -la3 "+ X" "+ Y" "+ Z"`;
+            $orient4 = `radioButtonGrp -nrb 3 -scl $orient3 -la3 "- X" "- Y" "- Z"`;
+        setParent ..;
+        
+        button -l "Segment Joint" -c "segment( $segmentField, $orient1, $orient2, $orient3, $orient4 )";
+    
+    // Show the window.        
+    showWindow $dialogBoxWindow;
+}

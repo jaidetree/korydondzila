@@ -1,0 +1,46 @@
+.main
+  .post-4
+    p
+      :font-size 180%
+      :line-height 170%
+      :font-family Palatino, Georgia, serif
+    h2
+      :color #171b1c
+      :font-size 400%
+      :line-height 200%
+      :font-weight normal
+      :background #9d1e00
+      @include border-radius-left(20px)
+      :padding-left 20px
+      :margin-right -20px
+    h3 
+      :text-align right
+      :color #171b1c
+      :margin-top -18px
+      :margin-right -1px
+      :text-transform uppercase
+    a.reel
+      :margin-left -240px
+      @include border-radius-right(30px)
+      :background #555
+      :color #171b1c
+      :padding 5px 80px 5px 20px
+      :position relative
+      :display inline-block
+      :margin-top 20px
+      :font-family 'Helvetica Neue', Helvetica, Arial, sans-serif
+      @include transition(all, 600ms, ease)
+      :text-decoration none
+      &:after
+        :content '.'
+        :font-size 800%
+        :text-decoration none
+        :position absolute
+        :right 0
+        :top 0
+        :margin-top -52px
+        :font-family Georgia, serif
+      &:hover
+        :margin-left -20px
+        :color #000
+        :background #9d1e00

@@ -1,0 +1,989 @@
+//////////////////////////////////////////////////////////////////////////
+///                                                                    ///
+/// SCRIPT:           kdCityGenV1.0.mel - MEL Script                   ///
+///                                                                    ///
+/// AUTHOR:           Kory Dondzila - kory@korydondzila.com            ///
+///                   www.korydondzila.com                             ///
+///                                                                    ///
+/// DESCRIPTION:           Generates a random city based on user       ///
+///                   input.  City can have aniamtion, controls are    ///
+///                   in the "city" group node.                        ///
+///                                                                    ///
+/// USAGE:            Source script then run: makeCityUI();            ///
+///                                                                    ///
+/// EDITS TO DO:          Fix up the UI.                               ///
+///                       Edit white space.                            ///
+///                                                                    ///
+/// THINGS TO ADD:        More variety of buildings and attach         ///
+///                   shaders.                                         ///
+///                                                                    ///
+/// VERSIONS:         1.0 - Nov 14, 2011 - Initial Release             ///
+///                                                                    ///
+//////////////////////////////////////////////////////////////////////////
+
+////////////////////////////////////////////////////////////
+//                                                        //
+// NOTE: The Animation controls are in the top node for   //
+//    each city you create.                               //
+//                                                        //
+////////////////////////////////////////////////////////////
+
+////////////////////////////////////////////////////////////
+/////////////////// Procedure: buildCity ///////////////////
+////////////////////////////////////////////////////////////
+//                                                        //
+//     This procedure creates the plots for the buildings //
+// and does it in a way that prevents them from           //
+// intersecting.                                          //
+
+proc buildCity(int $citySize, int $buildSize, string $cityName, int $animate, int $refresh, int $buildMin, int $buildMax)
+{
+    // Setting up initial variables.  This matrix had to have
+    // values assigned or maya would crash when adding it later on.
+    matrix $city[24][24] = << 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0;
+                              0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0;
+                              0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0;
+                              0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0;
+                              0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0;
+                              0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0;
+                              0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0;
+                              0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0;
+                              0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0;
+                              0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0;
+                              0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0;
+                              0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0;
+                              0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0;
+                              0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0;
+                              0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0;
+                              0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0;    
+                              0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0;
+                              0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0;
+                              0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0;
+                              0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0;
+                              0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0;
+                              0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0;
+                              0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0;
+                              0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0>>;
+    matrix $check[24][24];
+    matrix $add[24][24];
+    int $plotNum = 1;
+    int $area = pow($citySize, 2);
+    int $plotSize;
+    string $buildings[];
+    string $plots[];
+    
+    // Creating groups for the parts.
+    // While plots_$count exists then $count++ and check again.
+    int $count = 1;
+    string $object = ("plots_"+$count);
+    while (`objExists $object`)
+    {
+        $count ++;
+        $object = ("plots_"+$count);
+    }
+    
+    string $plotGrp = `group -n $object -em`;
+    
+    // While buildings_$count exists then $count++ and check again.
+    int $count = 1;
+    string $object = ("buildings_"+$count);
+    while (`objExists $object`)
+    {
+        $count ++;
+        $object = ("buildings_"+$count);
+    }
+    
+    string $bldngGrp = `group -n $object -em`;
+    group -n $cityName $plotGrp $bldngGrp;
+    
+    // This while loops creats buildings while $ares is greater than 0.
+    while ($area > 0)
+    {
+        // This loops shecks if plotsize is good.
+        int $good = 0;
+        while (! $good)
+        {
+            // Generate a random plotsize based on total area
+            // and checks if it's less than or equal to the user input 
+            // for building size squared .
+        	$plotSize = rand(1, $area+1);
+        	if ($plotSize <= (pow($buildSize, 2)))
+        	{
+            	print ("PLOT: "+$plotSize+"\n");
+            	for ($d=1; $d<$buildSize+1; $d++)
+            	{
+            	    // Checks if $plotSize/$d is not a decimal and if it's <= $buildsize.
+            	    // If true break from loop and $good is 1.
+            		if (((float($plotSize) / $d) == (int($plotSize) / $d)) && ((float($plotSize) / $d) <= $buildSize))
+            		{
+            			$good = 1;
+            			break;
+            		}
+            	}
+        	}
+        }
+        
+        // Set values for $x and $z (length and width).
+        int $x = rand(1, ($buildSize+1));
+        print ("X: "+$x+"\n");
+        int $z = float($plotSize) / $x;
+        print ("Z: "+$z+"\n");
+        
+        // While $z is a decimal or greater than $buildSize set new values for $x and $z.
+        while (($z != (float($plotSize) / $x)) || ($z > $buildSize))
+        {
+            $x = rand(1, ($buildSize+1));
+            print ("X: "+$x+"\n");
+            $z = float($plotSize) / $x;
+            print ("Z: "+$z+"\n");
+        }
+        
+        int $countZ = 0;
+        int $countX = -1;
+        int $bad = 1;
+        
+        // This loop checks for intersection in the plots.
+        while ($bad)
+        {
+            // This checks the position of the leading $x and $z points,
+            // when they get to the end of the matrix they go back to the 
+            // beginning drop down one row.
+            // If plot never fits, always intersects, then break from while loop
+            // this will cause it to get a new plotSize and try again.
+            if ($x+$countX == $citySize)
+            {
+                $countX = 0;
+                if ($z+$countZ == $citySize)
+                {
+                    $bad = 1;
+                    $countZ ++;
+                    break;
+                }else{
+                    $countZ ++;
+                }
+            }else{
+                $countX ++;
+            }
+            
+            // Resets the check array.
+            $check = << 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0;
+                        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0;
+                        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0;
+                        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0;
+                        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0;
+                        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0;
+                        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0;
+                        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0;
+                        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0;
+                        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0;
+                        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0;
+                        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0;
+                        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0;
+                        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0;
+                        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0;
+                        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0;
+                        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0;
+                        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0;
+                        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0;
+                        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0;
+                        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0;
+                        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0;
+                        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0;
+                        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0>>;
+            
+            // For the current plot, and positions put 1 in those spots in the matrix.
+            for ($za = 0+$countZ; $za<$z+$countZ; $za++)
+            {
+                for ($xa = 0+$countX; $xa<$x+$countX; $xa++)
+                {
+                   $check[$za][$xa] = 1;
+                }
+            }
+            
+            // Adds city matrix and check matrix
+            $add = $city + $check;
+            
+            // Loop checks the add matrix, if any values are 2 then $bad is true
+            // and break from for loop to move plot.
+            for ($za = 0; $za<24; $za++)
+            {
+                for ($xa = 0; $xa<24; $xa++)
+                {
+                    if ($add[$za][$xa] == 2)
+                    {
+                        $bad = 1;
+                        break;
+                    }else{
+                        $bad = 0;
+                    }
+                }
+                if ($bad) break;
+            }
+        }
+        
+        // If not plot fit.
+        if (! $bad)
+        {
+            // Add 1's to city matrix for new plot.
+            for ($za = 0+$countZ; $za<$z+$countZ; $za++)
+            {
+                for ($xa = 0+$countX; $xa<$x+$countX; $xa++)
+                {
+                    $city[$za][$xa] = 1;
+                }
+            }
+            
+            // Creates a poly plane for the plot, positions it,
+            // parents it to the plot group  and refresh the viewpane.
+            string $block[] = `polyPlane -w $x -h $z -sx 1 -sy 1 -ch 0 -n ($cityName+"_plot_"+$plotNum)`;
+            $plots[($plotNum-1)] = $block[0];
+            setAttr ($block[0]+".t") (((float($x)/2)+$countX)-($citySize/2)) 0 (((float($z)/2)+$countZ)-($citySize/2));
+            parent $block[0] $plotGrp;
+            print $city;
+            if ($refresh) refresh -cv -f;
+            
+            // Randomly choose a building type.
+            switch(int(rand(0,3)))
+            {
+                case 0:
+                    officeOne($x, $z, $countX, $countZ, $citySize, $cityName, $plotNum, $refresh, $buildMin, $buildMax);
+                    break;
+                case 1:
+                    officeTwo($x, $z, $countX, $countZ, $citySize, $cityName, $plotNum, $refresh, $buildMin, $buildMax);
+                    break;
+                case 2:
+                    officeThree($x, $z, $countX, $countZ, $citySize, $cityName, $plotNum, $refresh, $buildMin, $buildMax);
+            }
+            
+            // Parent new building to the building group.
+            $buildings[($plotNum-1)] = ($cityName+"_building_"+$plotNum);
+            parent $buildings[$plotNum-1] $bldngGrp;
+            
+            // Add 1 to plotNum and subtract plotSize from area.
+            $plotNum ++;
+            $area -= $plotSize;
+        }
+    }
+    
+    // If animate was chosen in the UI then add expression to building.
+    if ($animate)
+    {
+        animation($buildings, $plotNum, $cityName);
+    }
+}
+
+////////////////////////////////////////////////////////////
+/////////////////// Procedure: animation ///////////////////
+////////////////////////////////////////////////////////////
+//                                                        //
+//     This procedure adds the animation to the buildings //
+// and adds the attributes to the top node.               //
+
+proc animation(string $buildings[], int $plotNum, string $cityName)
+{
+    // Adds attribute to control the frequency of the animation.
+    addAttr -at "float" -ln "frequency" -dv 2.00 -min 0.00 -max 5.00 -k 1 $cityName;
+    string $frequency = ($cityName+".frequency");
+    
+    // Adds attribute to control the number of waves in the city.
+    addAttr -at "float" -ln "wave" -dv 1 -min 0.1 -max 20.00 -k 1 $cityName;
+    string $wave = ($cityName+".wave");
+    
+    // Adds attribute to control the height of the buildings.
+    addAttr -at "float" -ln "height" -dv 10 -min 0.0 -max 15.0 -k 1 $cityName;
+    string $height = ($cityName+".height");
+    
+    // Adding an enum attribute to the city, this will be used to control which animation the user wants.
+    addAttr -at enum -en "None:Sine Wave:Radial Sine Wave" -ln "animationType" -r 1 $cityName;
+    string $animType = ($cityName+".animationType");
+    setAttr $animType -cb 1 1;
+    
+    // For each building created, give it an expression.
+    for ($i = 1; $i < $plotNum; $i++)
+    {
+        expression -n ("building_"+$i+"_bounce") -s (
+        "if ("+$animType+" == 0)\n"+
+        "{\n"+
+        "    scaleY = 1;\n"+
+        "}else if ("+$animType+" == 1){\n"+
+        "    scaleY = abs(sin("+$frequency+"*time-("+$i+"*3.1415926)/((2*"+($plotNum-1)+")/"+$wave+"))*"+$height+");\n"+
+        "}else if ("+$animType+" == 2){\n"+
+        "    scaleY = abs(sin("+$frequency+"*time-((pow(abs(translateX), 2)+pow(abs(translateZ), 2))*3.1415926)/((2*"+($plotNum-1)+")/("+$wave+"*5)))*"+$height+");\n"+
+        "}") -o ($buildings[$i-1]);
+    }
+    select $cityName;
+}
+
+////////////////////////////////////////////////////////////
+/////////////////// Procedure: officeOne ///////////////////
+////////////////////////////////////////////////////////////
+//                                                        //
+//     This procedure models a building based on given    //
+// values from the plot and chooses a random number of    //
+// floors.  First floor has four doors and the other      //
+// floors are either extruded in or extruding every other //
+// face for windows.                                      //
+
+proc officeOne(int $x, int $z, int $countX, int $countZ, int $citySize, string $cityName, int $num, int $refresh, int $buildMin, int $buildMax)
+{
+    // $y is number of floors.
+    int $y = rand($buildMin, $buildMax);
+    
+    // Create a plane and positions it.
+    string $office[] = `polyPlane -ch 0 -w ($x-.25) -h ($z-.25) -sx ($x*9) -sy ($z*9) -n ($cityName+"_building_"+$num)`;
+    setAttr ($office[0]+".t") (((float($x)/2)+$countX)-($citySize/2)) 0 (((float($z)/2)+$countZ)-($citySize/2));
+    
+    // Gets the number of faces on the plane for top and bottom
+    // minus one. Then refresh the viewpane.
+    int $faces = ($x*9)*($z*9)-1;
+    int $topBottom = $faces*2+1;
+    if ($refresh) refresh -cv -f;
+    
+    // For the number of floors extrude up and refresh the view.
+    for ($i = 0; $i < $y; $i++)
+    {
+        polyExtrudeFacet -ch 0 -ltz 0.091 -sma 0 ($office[0]+".f[0:"+$faces+"]");
+        if ($refresh) refresh -cv -f;
+        select -cl;
+    }
+    
+    // Set variables.
+    int $done = $topBottom;
+    int $selectX;
+    int $selectZ;
+    
+    // loops sets select X and Z this is for finding
+    // the middle face on the first floor.
+    for ($i = 1; $i < 3; $i++)
+    {
+        switch ($i)
+        {
+            case 1:
+                $selectX = (($x*9)+1)/2;
+                break;
+            case 2:
+                $selectZ = (($z*9)+1)/2;
+                break;
+        }
+    }
+    
+    // Find the face for each door(middle face on first floor).
+    // And add to done.
+    int $door1 = ($done+$selectX+1);
+    $done += ($x*9)+1;
+    int $door2 = ($done+($selectZ*2-1));
+    int $door3 = ($done+($selectZ*2-2));
+    $done += ($z*9)*2-2;
+    int $door4 = ($done+$selectX);
+    $done += ($x*9)+1;
+    
+    // Extrude doors and refresh.
+    polyExtrudeFacet -ch 0 -ltz -0.02 -ls 0.507678 0.769128 1 -sma 0 ($office[0]+".f["+$door1+"]") ($office[0]+".f["+$door2+"]") ($office[0]+".f["+$door3+"]") ($office[0]+".f["+$door4+"]");
+    if ($refresh) refresh -cv -f;
+    
+    // For loop operates on the rest of the floors
+    int $level = (($x*9)+($z*9))*2;
+    for ($i = 1; $i<$y; $i++)
+    {
+        // If odd extrude in whole floor, if even
+        // extrude in every other window.
+        int $section[] = {$done+1, $done+$level};
+        if ((float($i)/2) == (int($i)/2))
+        {
+            // Because of the way Maya generates faces from extruding
+            // the pattern for selecting faces can be confusing.
+            select -cl;
+            int $count2 = 2;
+            int $tgl = 0;
+            
+            // Loop operates on all the faces on the floor and
+            // selects every other.
+            for ($s = 0; $s < $level-1; $s++)
+            {
+                // If not first face, start to toggle.
+                // Toggle is used to select faces on the side
+                // of the building.
+                if ($s > 0)
+                {
+                    if ($count2 <2)
+                    {
+                        $count2 ++;
+                    }else{
+                        $count2 = 1;
+                        if ($tgl)
+                        {
+                            $tgl = 0;
+                        }else{
+                            $tgl = 1;
+                        }
+                    }
+                }
+                
+                // $count is current face.
+                int $count = ($s+1)+$done;
+                
+                // if a front face and even then select.
+                if ($s < ($x*9))
+                {
+                    if (($s > 1) && ((float($s)/2) == (int($s)/2)))
+                    {
+                        select -tgl ($office[0]+".f["+($count)+"]");
+                    }
+                // If a side face and toggle is on then select.
+                // Face creation alternates sides so toggle is true twice
+                // then false twice.
+                }else if ((($s > ($x*9)+1) && ($s < $level-($x*9+2))) && ($tgl))
+                {
+                        select -tgl ($office[0]+".f["+($count)+"]");
+                // If a back face and odd then select.
+                }else if ($s > $level-($x*9+1))
+                {
+                    if ((float($s)/2) != (int($s)/2))
+                    {
+                        select -tgl ($office[0]+".f["+($count)+"]");
+                    }
+                }
+                
+            }
+            
+            // Get selection and extrude, then refresh view.
+            string $windows[] = `ls -sl`;
+            polyExtrudeFacet -ch 0 -ltz -0.048 -ls 0.755657 0.819903 0 -sma 0 $windows;
+            if ($refresh) refresh -cv -f;
+        }else{
+            // Extrudes whole floor then refresh view.
+            polyExtrudeFacet -ch 0 -ltz -0.04 -ls 0.313056 0.313056 1 -sma 0 ($office[0]+".f["+$section[0]+":"+$section[1]+"]");
+            if ($refresh) refresh -cv -f;
+        }
+        
+        // Add level (number of faces on floor) to done.
+        $done += $level;
+    }
+    select -cl;
+}
+
+////////////////////////////////////////////////////////////
+/////////////////// Procedure: officeTwo ///////////////////
+////////////////////////////////////////////////////////////
+//                                                        //
+//     This procedure models a building based on given    //
+// values from the plot and chooses a random number of    //
+// floors.  Similar to officeOne, but it's all everyother //
+// face for windows and the windows stagger.              //
+
+proc officeTwo(int $x, int $z, int $countX, int $countZ, int $citySize, string $cityName, int $num, int $refresh, int $buildMin, int $buildMax)
+{
+    int $y = rand($buildMin, $buildMax);
+    
+    string $office[] = `polyPlane -ch 0 -w ($x-.25) -h ($z-.25) -sx ($x*9) -sy ($z*9) -n ($cityName+"_building_"+$num)`;
+    setAttr ($office[0]+".t") (((float($x)/2)+$countX)-($citySize/2)) 0 (((float($z)/2)+$countZ)-($citySize/2));
+    int $faces = ($x*9)*($z*9)-1;
+    int $topBottom = $faces*2+1;
+    if ($refresh) refresh -cv -f;
+    select -cl;
+    
+    for ($i = 0; $i < $y; $i++)
+    {
+        polyExtrudeFacet -ch 0 -ltz 0.091 -sma 0 ($office[0]+".f[0:"+$faces+"]");
+        if ($refresh) refresh -cv -f;
+        select -cl;
+    }
+    
+    int $done = $topBottom;
+    
+    int $level = (($x*9)+($z*9))*2;
+    for ($i = 1; $i<$y+1; $i++)
+    {
+        if ((float($i)/2) == (int($i)/2))
+        {
+            select -cl;
+            int $count2 = 2;
+            int $tgl = 0;
+            for ($s = 0; $s < $level-1; $s++)
+            {
+                if ($s > 0)
+                {
+                    if ($count2 <2)
+                    {
+                        $count2 ++;
+                    }else{
+                        $count2 = 1;
+                        if ($tgl)
+                        {
+                            $tgl = 0;
+                        }else{
+                            $tgl = 1;
+                        }
+                    }
+                }
+                
+                int $count = ($s+1)+$done;
+                if ($s < ($x*9))
+                {
+                    if (($s > 1) && ((float($s)/2) == (int($s)/2)))
+                    {
+                        select -tgl ($office[0]+".f["+($count)+"]");
+                    }
+                }else if ((($s > ($x*9)+1) && ($s < $level-($x*9+2))) && ($tgl))
+                {
+                        select -tgl ($office[0]+".f["+($count)+"]");
+                }else if ($s > $level-($x*9+1))
+                {
+                    if ((float($s)/2) != (int($s)/2))
+                    {
+                        select -tgl ($office[0]+".f["+($count)+"]");
+                    }
+                }
+                
+            }
+            string $windows[] = `ls -sl`;
+            polyExtrudeFacet -ch 0 -ltz -0.024 -ls 0.45 0.55 0 -sma 0 $windows;
+            if ($refresh) refresh -cv -f;
+        }else{
+            select -cl;
+            int $count2 = 2;
+            int $tgl = 1;
+            for ($s = 0; $s < $level-1; $s++)
+            {
+                if ($s > 0)
+                {
+                    if ($count2 <2)
+                    {
+                        $count2 ++;
+                    }else{
+                        $count2 = 1;
+                        if ($tgl)
+                        {
+                            $tgl = 0;
+                        }else{
+                            $tgl = 1;
+                        }
+                    }
+                }
+                
+                int $count = ($s+1)+$done;
+                if ($s < ($x*9))
+                {
+                    if (($s > 1) && ((float($s)/2) != (int($s)/2)))
+                    {
+                        select -tgl ($office[0]+".f["+($count)+"]");
+                    }
+                }else if ((($s > ($x*9)+1) && ($s < $level-($x*9+2))) && ($tgl))
+                {
+                        select -tgl ($office[0]+".f["+($count)+"]");
+                }else if (($s > $level-($x*9)-1) && ($s < $level-2))
+                {
+                    if ((float($s)/2) == (int($s)/2))
+                    {
+                        select -tgl ($office[0]+".f["+($count)+"]");
+                    }
+                }
+                
+            }
+            string $windows[] = `ls -sl`;
+            polyExtrudeFacet -ch 0 -ltz -0.024 -ls 0.45 0.55 0 -sma 0 $windows;
+            if ($refresh) refresh -cv -f;
+        }
+        $done += $level;
+    }
+    select -cl;
+}
+
+////////////////////////////////////////////////////////////
+////////////////// Procedure: officeThree //////////////////
+////////////////////////////////////////////////////////////
+//                                                        //
+//     This procedure models a building based on given    //
+// values from the plot and chooses a random number of    //
+// floors.  First floor has four doors and the other      //
+// floors are either extruded in and has windows or       //
+// extruding every other face for windows.                //
+
+proc officeThree(int $x, int $z, int $countX, int $countZ, int $citySize, string $cityName, int $num, int $refresh, int $buildMin, int $buildMax)
+{
+    // $y is number of floors.
+    int $y = rand($buildMin, $buildMax);
+    
+    // Create a plane and positions it.
+    string $office[] = `polyPlane -ch 0 -w ($x-.25) -h ($z-.25) -sx ($x*9) -sy ($z*9) -n ($cityName+"_building_"+$num)`;
+    setAttr ($office[0]+".t") (((float($x)/2)+$countX)-($citySize/2)) 0 (((float($z)/2)+$countZ)-($citySize/2));
+    
+    // Gets the number of faces on the plane for top and bottom
+    // minus one. Then refresh the viewpane.
+    int $faces = ($x*9)*($z*9)-1;
+    int $topBottom = $faces*2+1;
+    if ($refresh) refresh -cv -f;
+    
+    // For the number of floors extrude up and refresh the view.
+    for ($i = 0; $i < $y; $i++)
+    {
+        polyExtrudeFacet -ch 0 -ltz 0.091 -sma 0 ($office[0]+".f[0:"+$faces+"]");
+        if ($refresh) refresh -cv -f;
+        select -cl;
+    }
+    
+    // Set variables.
+    int $done = $topBottom;
+    int $selectX;
+    int $selectZ;
+    
+    // loops sets select X and Z this is for finding
+    // the middle face on the first floor.
+    for ($i = 1; $i < 3; $i++)
+    {
+        switch ($i)
+        {
+            case 1:
+                $selectX = (($x*9)+1)/2;
+                break;
+            case 2:
+                $selectZ = (($z*9)+1)/2;
+                break;
+        }
+    }
+    
+    // Find the face for each door(middle face on first floor).
+    // And add to done.
+    int $door1 = ($done+$selectX+1);
+    $done += ($x*9)+1;
+    int $door2 = ($done+($selectZ*2-1));
+    int $door3 = ($done+($selectZ*2-2));
+    $done += ($z*9)*2-2;
+    int $door4 = ($done+$selectX);
+    $done += ($x*9)+1;
+    
+    // Extrude doors and refresh.
+    polyExtrudeFacet -ch 0 -ltz -0.02 -ls 0.507678 0.769128 1 -sma 0 ($office[0]+".f["+$door1+"]") ($office[0]+".f["+$door2+"]") ($office[0]+".f["+$door3+"]") ($office[0]+".f["+$door4+"]");
+    if ($refresh) refresh -cv -f;
+    
+    // For loop operates on the rest of the floors
+    int $level = (($x*9)+($z*9))*2;
+    for ($i = 1; $i<$y; $i++)
+    {
+        // If odd extrude in whole floor, if even
+        // extrude in every other window.
+        int $section[] = {$done+1, $done+$level};
+        if ((float($i)/2) == (int($i)/2))
+        {
+            // Extrudes whole floor then refresh view.
+            polyExtrudeFacet -ch 0 -ltz -0.04 -ls 0.313056 0.9 1 -sma 0 ($office[0]+".f["+$section[0]+":"+$section[1]+"]");
+            if ($refresh) refresh -cv -f;
+            
+            // Because of the way Maya generates faces from extruding
+            // the pattern for selecting faces can be confusing.
+            select -cl;
+            int $count2 = 2;
+            int $tgl = 0;
+            
+            // Loop operates on all the faces on the floor and
+            // selects every other.
+            for ($s = 0; $s < $level-1; $s++)
+            {
+                // If not first face, start to toggle.
+                // Toggle is used to select faces on the side
+                // of the building.
+                if ($s > 0)
+                {
+                    if ($count2 <2)
+                    {
+                        $count2 ++;
+                    }else{
+                        $count2 = 1;
+                        if ($tgl)
+                        {
+                            $tgl = 0;
+                        }else{
+                            $tgl = 1;
+                        }
+                    }
+                }
+                
+                // $count is current face.
+                int $count = ($s+1)+$done;
+                
+                // if a front face and even then select.
+                if ($s < ($x*9))
+                {
+                    if (($s > 1) && ((float($s)/2) == (int($s)/2)))
+                    {
+                        select -tgl ($office[0]+".f["+($count)+"]");
+                    }
+                // If a side face and toggle is on then select.
+                // Face creation alternates sides so toggle is true twice
+                // then false twice.
+                }else if ((($s > ($x*9)+1) && ($s < $level-($x*9+2))) && ($tgl))
+                {
+                        select -tgl ($office[0]+".f["+($count)+"]");
+                // If a back face and odd then select.
+                }else if ($s > $level-($x*9+1))
+                {
+                    if ((float($s)/2) != (int($s)/2))
+                    {
+                        select -tgl ($office[0]+".f["+($count)+"]");
+                    }
+                }
+                
+            }
+            
+            // Get selection and extrude, then refresh view.
+            string $windows[] = `ls -sl`;
+            polyExtrudeFacet -ch 0 -ltz -0.048 -ls 0.755657 0.819903 0 -sma 0 $windows;
+            if ($refresh) refresh -cv -f;
+        }else{
+            select -cl;
+            int $count2 = 2;
+            int $tgl = 1;
+            for ($s = 0; $s < $level-1; $s++)
+            {
+                if ($s > 0)
+                {
+                    if ($count2 <2)
+                    {
+                        $count2 ++;
+                    }else{
+                        $count2 = 1;
+                        if ($tgl)
+                        {
+                            $tgl = 0;
+                        }else{
+                            $tgl = 1;
+                        }
+                    }
+                }
+                
+                int $count = ($s+1)+$done;
+                if ($s < ($x*9))
+                {
+                    if (($s > 1) && ((float($s)/2) != (int($s)/2)))
+                    {
+                        select -tgl ($office[0]+".f["+($count)+"]");
+                    }
+                }else if ((($s > ($x*9)+1) && ($s < $level-($x*9+2))) && ($tgl))
+                {
+                        select -tgl ($office[0]+".f["+($count)+"]");
+                }else if (($s > $level-($x*9)-1) && ($s < $level-2))
+                {
+                    if ((float($s)/2) == (int($s)/2))
+                    {
+                        select -tgl ($office[0]+".f["+($count)+"]");
+                    }
+                }
+                
+            }
+            string $windows[] = `ls -sl`;
+            polyExtrudeFacet -ch 0 -ltz -0.024 -ls 0.755657 0.819903 0 -sma 0 $windows;
+            if ($refresh) refresh -cv -f;
+        }
+        
+        // Add level (number of faces on floor) to done.
+        $done += $level;
+    }
+    select -cl;
+}
+
+// This procedure gets the values to be used in the creation procedure.
+proc buttonAction(string $city, string $exprChkBx, string $cityField, string $buildField, string $buildMin, string $buildMax)
+{
+    // Gets values.
+    string $cityName = `textFieldButtonGrp -q -tx $city`;
+    int $citySize = `intSliderGrp -q -v $cityField`;
+    int $buildSize = `intSliderGrp -q -v $buildField`;
+    int $animate = `checkBoxGrp -q -v1 $exprChkBx`;
+    int $refresh = `checkBoxGrp -q -v2 $exprChkBx`;
+    int $min = `intSliderGrp -q -v $buildMin`;
+    int $max = `intSliderGrp -q -v $buildMax`;
+    
+    // While $cityName_$count exists then $count++ and check again.
+    int $count = 1;
+    string $object = ($cityName+"_"+$count);
+    while (`objExists $object`)
+    {
+        $count ++;
+        $object = ($cityName+"_"+$count);
+    }
+    $cityName = $object;
+    
+    // If statements check the values for user input error.
+    if ($citySize > 24)
+    {
+        $citySize = 24;
+    }else if ($citySize < 1){
+        $citySize = 1;
+    }
+    
+    if ($buildSize > $citySize)
+    {
+        $buildSize = $citySize;
+    }else if ($buildSize < 1){
+        $buildSize = 1;
+    }
+    
+    if ($max > 40)
+    {
+        $max = 40;
+    }else if ($max < 1){
+        $max = 1;
+    }
+    
+    if ($min > 40)
+    {
+        $min = 40;
+    }else if ($min < 1){
+        $min = 1;
+    }
+    
+    if($max < $min) $min = $max;
+    if($min > $max) $max = $min;
+    
+    // Run whichButton procedure.
+    buildCity($citySize, $buildSize, $cityName, $animate, $refresh, $min, $max);
+}
+
+// Proc checks if max slider goes below min and adjusts min with it.
+proc changeMin(string $buildMin, string $buildMax)
+{
+    int $min = `intSliderGrp -q -v $buildMin`;
+    int $max = `intSliderGrp -q -v $buildMax`;
+    if($max < $min) intSliderGrp -e -v $max $buildMin;
+}
+
+// Proc checks if min slider goes above miax and adjusts max with it.
+proc changeMax(string $buildMin, string $buildMax)
+{
+    int $min = `intSliderGrp -q -v $buildMin`;
+    int $max = `intSliderGrp -q -v $buildMax`;
+    if($min > $max) intSliderGrp -e -v $min $buildMax;
+}
+
+// Proc adjusts building size slider's -max to be the value of
+// citySize slider.
+proc changeBuild(string $cityField, string $buildField)
+{
+    int $max = `intSliderGrp -q -v $cityField`;
+    intSliderGrp -e -max $max -fmx $max -v $max $buildField;
+}
+
+// This procedure disables the create and edit name button and
+// enables the text field if user wants to edit name.
+// This requires the user to recheck the name before creating the
+// city.
+proc editName(string $cityName, string $editName, string $create)
+{
+    textFieldButtonGrp -e -ed 1 $cityName;
+    button -e -en 0 $editName;
+    button -e -en 0 $create;
+}
+
+// This procedure checks if the name is valid and substrings the name to 16 characters.
+proc validName(string $cityName, string $editName, string $create)
+{
+    string $testString = `textFieldButtonGrp -q -tx $cityName`;
+    
+    // If name is more than 16 characters then substring the first 16.
+    int $size = size($testString);
+    if ($size>16)
+    {
+        $testString = `substring $testString 1 16`;
+        textFieldButtonGrp -e -tx $testString $cityName;
+    }
+    
+    // Returns the valid characters in the name.
+    string $matchingPart = `match "^[a-zA-Z][0-9a-zA-Z_]*$" $testString`;
+    
+    // If matched name is the same as name goodmatch = 1 else 0.
+    int $goodMatch = ! `strcmp $matchingPart $testString`;
+    
+    // If no name is given then goodmatch is 0.
+    if ($testString == "")
+    {
+        $goodMatch = 0;
+    }
+    
+    // If goodmatch is 1 then disable textField and enable edit name and create buttons.
+    // Else give warning.
+    if ($goodMatch)
+    {
+        textFieldButtonGrp -e -ed 0 $cityName;
+        button -e -en 1 $editName;
+        button -e -en 1 $create;
+    }else{
+        confirmDialog -t "Warning" -m "Invalid city name." -ma "center" -b "OK" -db "OK" -cb "OK" -ds "OK" -icn "warning";
+    }
+}
+
+// Substrings the name to 16 characters if name was greater than 16 characters.
+proc sizeName(string $cityName)
+{
+    string $testString = `textFieldButtonGrp -q -tx $cityName`;
+    int $size = size($testString);
+    if ($size>16)
+    {
+        $testString = `substring $testString 1 16`;
+        textFieldButtonGrp -e -tx $testString $cityName;
+    }
+}
+
+//UI Creator
+global proc makeCityUI()
+{
+     if (`window -q -ex makeCityUI`)
+    {
+        deleteUI makeCityUI;
+    }
+    //Declare Global Strings
+    global string $cityField;
+    global string $buildField;
+    global string $exprChkBx;
+    global string $create;
+    global string $destroy;
+    global string $cityName;
+    global string $editName;
+    global string $buildMin;
+    global string $buildMax;
+    
+    //Makes window fit around content
+    string $dialogBoxWindow = `window -t "City Generator" -rtf 1 makeCityUI`;
+        
+        columnLayout -adj 1;
+            frameLayout -l "Name";
+                columnLayout -adj 1;
+                    
+                    // TextField is to name the city, on change the text is dropped to 16 characters if it was more.
+                    // Check name button checks if the name is valid.
+                    // Edit name button allows user to edit the entered name.
+                    $cityName = `textFieldButtonGrp -l "City Name" -cc "sizeName($cityName)" -bl "Check Name" -bc "validName($cityName, $editName, $create)"`;
+                    $editName = `button -en 0 -l "Edit Name" -c "editName($cityName, $editName, $create)"`;
+                setParent ..;
+            setParent ..;
+            
+            frameLayout -l "Size";
+                columnLayout -adj 1;
+    
+                    //This creates the int sliders for the building and city size, it creates the UI
+                    $cityField = `intSliderGrp -f 1 -l "City Size" -min 1 -max 24 -fmn 1 -fmx 24 -v 24 -dc "changeBuild($cityField, $buildField)"`;
+                    $buildField = `intSliderGrp -f 1 -l "Building Size" -min 1 -max 24 -fmn 1 -fmx 24 -v 4`;
+                    $buildMin = `intSliderGrp -f 1 -l "Minimum Building Floors" -min 1 -max 30 -fmn 1 -fmx 30 -v 1 -dc "changeMax($buildMin, $buildMax)"`;
+                    $buildMax = `intSliderGrp -f 1 -l "Maximum Building Floors" -min 1 -max 30 -fmn 1 -fmx 30 -v 20 -dc "changeMin($buildMin, $buildMax)"`;
+                    
+                setParent ..;
+            setParent ..;
+            
+            frameLayout -l "Options";
+                columnLayout -adj 1;
+                
+                    // Check box is to animate the city and refresh the viewpane.
+                    $exprChkBx = `checkBoxGrp -ncb 2 -la2 "Animate" "Refresh" -va2 0 1`;
+                setParent ..;
+            setParent ..;
+            
+            frameLayout -l "Generate";
+                columnLayout -adj 1;
+                    // Create a "creation" button
+                    $create = `button -en 0 -l "Create" -c "buttonAction($cityName, $exprChkBx, $cityField, $buildField, $buildMin, $buildMax)"`;
+        
+                    // Create a "destruction" button
+                    $destroy = `button -label "Destroy / Clear Scene" -align "center" -command "file -f -new;"`;
+    
+    //Show window
+    showWindow $dialogBoxWindow;
+}

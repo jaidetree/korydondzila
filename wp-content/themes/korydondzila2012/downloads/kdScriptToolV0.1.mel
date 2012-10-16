@@ -1,0 +1,1340 @@
+//////////////////////////////////////////////////////////////////////////
+///                                                                    ///
+/// SCRIPT:           kdScriptToolV0.1.mel - MEL Script                ///
+///                                                                    ///
+/// AUTHOR:           Kory Dondzila - kory@korydondzila.com            ///
+///                   www.korydondzila.com                             ///
+///                                                                    ///
+/// DESCRIPTION:           This is a prototype script.  A UI for       ///
+///                   scripting.  You press buttons to write your      ///
+///                   script. though this system intends to be         ///
+///                   intuitive.  You can save and load scripts.       ///
+///                                                                    ///
+/// USAGE:            Source script then run: scriptUI();              ///
+///                                                                    ///
+/// EDITS TO DO:      Edit white space.                                ///
+///                                                                    ///
+/// THINGS TO ADD:        Well the script isn't finished yet, but I    ///
+///                   plan on adding stuff so that you can search for  ///
+///                   commands and their flags and insert them, with   ///
+///                   a prompt for each selected flag.                 ///
+///                       Sections to add and insert variables and     ///
+///                   procs it will keep track of them in your script  ///
+///                   so you can be a bit more organized.  This will   ///
+///                   also work for loading scripts.                   ///
+///                       All buttons will have annotations so the     ///
+///                   user understands how to use them.                ///
+///                       Undo and Redo need to be added, along with   ///
+///                   executing, sourcing, and making shelf buttons    ///
+///                   from scripts.                                    ///
+///                       Possible a system of error checking AND      ///
+///                   fixing.                                          ///
+///                                                                    ///
+/// VERSIONS:         0.1 - Nov 17, 2011 - Initial Prototype           ///
+///                                                                    ///
+//////////////////////////////////////////////////////////////////////////
+
+////////////////////////////////////////////////////////////
+///////////////// Procedure: searchCommands ////////////////
+////////////////////////////////////////////////////////////
+//                                                        //
+//     This procedure is called when Search Commands is   //
+// pressed.  It takes the search term in the search       //
+// commands text field and finds all matching strings in  //
+// the commands scroll list.                              //
+
+proc searchCommands(string $mayaCommands[], string $searchCommand, string $commandListField)
+{
+    // Set nitial variables.
+    string $lowerCommand;
+    string $matchCommands[];
+    int $matchNumber[];
+    int $size = size($mayaCommands);
+    int $s = 0;
+    
+    // Query the textField and tolower the term.
+    string $term = `textField -q -tx $searchCommand`;
+    $term = `tolower $term`;
+    
+    // If term is not empty search for matching strings
+    // else show all commands.
+    if ($term != "")
+    {
+        // For $i 0 to less than size of mayaCommands
+        // tolower the current command into a new
+        // variable, then match $term to lowerCommand
+        // if $match is not "" then set current matchNumber
+        // to current command.
+        for ($i = 0; $i<$size; $i++)
+        {
+            // Sets command to lowercase.
+            $lowerCommand = `tolower $mayaCommands[$i]`;
+            // Matches command.
+            string $match = `match $term $lowerCommand`;
+            // If not empty.
+            if ($match != "")
+            {
+                // $s is a seperate count from $i
+                // so $s only increases when a match is found.
+                $matchNumber[$s] = $i;
+                $s ++;
+            }
+        }
+        
+        // Set $s back to 0.
+        $s = 0;
+        int $num;
+        
+        // For num in matchNumber set matchCommand to
+        // mayaCommand of $num.
+        for ($num in $matchNumber)
+        {
+            // This is a new array of only the matching strings.
+            $matchCommands[$s] = $mayaCommands[$num];
+            $s ++;
+        }
+        
+        // Remove all strings from the command scrollList.
+        textScrollList -e -ra $commandListField;
+        string $cmd;
+        // For $cmd in matchCommands append $cmd to the
+        // command scrollList.
+        for ($cmd in $matchCommands)
+        {
+            textScrollList -e -a $cmd $commandListField;
+        }
+    }else{
+        // If the search term was empty then remove al strings from list
+        // and append all in mayaCommands (this prevents doubles from appearing).
+        string $cmd;
+        textScrollList -e -ra $commandListField;
+        for ($cmd in $mayaCommands)
+        {
+            textScrollList -e -a $cmd $commandListField;
+        }
+    }
+}
+
+////////////////////////////////////////////////////////////
+//////////////////// Procedure: comment ////////////////////
+////////////////////////////////////////////////////////////
+//                                                        //
+//     This procedure is called when the Comment button   //
+// is pressed.  It prompts the user for a string that     //
+// will be put into the script as a comment, escape       //
+// characters don't work due to the nature of string      //
+// variables.                                             //
+
+proc comment(string $scriptField)
+{
+    // Set initial variables.
+    global string $script;
+    string $comment;
+    
+    // Prompt user for a comment.
+    string $result = `promptDialog -title "Input Comment"
+        -message "Enter the comment you want to add"
+        -ma "center"
+        -sf 1
+        -button "OK" -button "Cancel"
+        -defaultButton "Cancel" -cancelButton "Cancel"
+        -dismissString "Cancel"`;
+    
+    // If user pressed ok then append text in prompt
+    // to the script.
+    if ($result == "OK")
+    {
+        $insertString = `promptDialog -query -text`;
+        $script += ("/*"+$insertString+"*/ ");
+        scrollField -e -tx $script $scriptField;
+    }
+}
+
+////////////////////////////////////////////////////////////
+////////////////// Procedure: insertString /////////////////
+////////////////////////////////////////////////////////////
+//                                                        //
+//     This procedure is called when the String button is //
+// pressed.  It prompts the user for a string that        //
+// will be put into the script in quotes, escape          //
+// characters get put into the string, but the user must  //
+// use them wisely because they could end up with an      //
+// unterminated string.                                   //
+
+proc insertString(string $scriptField)
+{
+    // Sets initial variables.
+    global string $script;
+    string $insertString;
+    
+    // Prompt user for a string.
+    string $result = `promptDialog -title "Input String"
+        -message "Make sure your string is valid with your script.\nUse back slashes wisely and properly."
+        -ma "center"
+        -sf 1
+        -button "OK" -button "Cancel"
+        -defaultButton "Cancel" -cancelButton "Cancel"
+        -dismissString "Cancel"`;
+    
+    // If user pressed ok then append text in promt
+    // to string.
+    if ($result == "OK")
+    {
+        $insertString = `promptDialog -query -text`;
+        $script += ("\""+$insertString+"\" ");
+        scrollField -e -tx $script $scriptField;
+    }
+}
+
+////////////////////////////////////////////////////////////
+///////////////////// Procedure: number ////////////////////
+////////////////////////////////////////////////////////////
+//                                                        //
+//     This procedure is called when the Number button is //
+// pressed.  It prompts the user for a number that        //
+// will be put into the script.  Only integer and float   //
+// nubmers, positive or negative, are valid.  If not      //
+// valid it warns the user.                               //
+
+proc number(string $scriptField)
+{
+    // Sets initial variables.
+    global string $script;
+    string $number;
+    
+    // Prompt user for a number.
+    string $result = `promptDialog -title "Input Number"
+        -message "A float or integer number."
+        -button "OK" -button "Cancel"
+        -defaultButton "Cancel" -cancelButton "Cancel"
+        -dismissString "Cancel"`;
+    
+    // If the user pressed OK.
+    if ($result == "OK")
+    {
+        // Query number and match for a +/- floating or integer number.
+        $number = `promptDialog -query -text`;
+        string $matchingPart = `match "^[0-9.-][0-9.]*$" $number`;
+        
+        // If matched number is the same as input number, goodmatch = 1 else 0.
+        int $goodMatch = ! `strcmp $matchingPart $number`;
+        
+        // If no number is given then goodmatch is 0.
+        if ($number == "")
+        {
+            $goodMatch = 0;
+        }
+        
+        // If goodmatch is 1 then append number to script.
+        // Else give warning.
+        if ($goodMatch)
+        {
+            $script += ($number+" ");
+            scrollField -e -tx $script $scriptField;
+        }else{
+            confirmDialog -t "Warning" -m "Invalid number."
+                -ma "center" -b "OK" -db "OK" -cb "OK" -ds "OK" -icn "warning";
+        }
+    }
+}
+
+////////////////////////////////////////////////////////////
+/////////////////// Procedure: saveScript //////////////////
+////////////////////////////////////////////////////////////
+//                                                        //
+//     This procedure is called when Save Script is       //
+// pressed.  It saves the selected text in the script     //
+// field to a mel file of the users choice, if no text is //
+// selected then it errors out.                           //
+
+proc saveScript(string $scriptField)
+{
+    // Query the selected text.
+    string $selected = `scrollField -q -sl $scriptField`;
+    
+    // If no text is selected then error, else prompt for a file.
+    if ($selected == "")
+    {
+        error "Select the text you wish to save.";
+    }else{
+        // Query the working directory and prompt for a file.
+        string $dir = `workspace -q -dir`;
+        string $filepath[] = `fileDialog2 -ds 2 -cap "Save Script..." -dir $dir -ff "Mel (*.mel)" -sff "Mel" -fm 0`;
+        
+        // If no filepath is chosen then error out
+        // else save selected text to named mel file.
+        if ($filepath[0] == "")
+        {
+            error "No filepath chosen.";
+        }else{
+            // This opens a file of the named filepath
+            // and enables it to write only/
+            $fileId=`fopen $filepath[0] "w"`;
+            
+            // Writes the selected text to the file
+            // then closese the file.
+            fprint $fileId $selected;
+            fclose $fileId;
+        }
+    }
+    
+}
+
+////////////////////////////////////////////////////////////
+/////////////////// Procedure: loadScript //////////////////
+////////////////////////////////////////////////////////////
+//                                                        //
+//     This procedure is called when Load Script is       //
+// pressed.  It loads the chosen mel file to the script   //
+// field, overwriting what was previously there.          //
+
+proc loadScript(string $scriptField)
+{
+    // Set initial variables and query if there is text in the
+    // script Field.
+    global string $script;
+    string $confirm;
+    string $line;
+    string $isText = `scrollField -q -tx $scriptField`;
+    
+    // If there is text in the scriptField, prompt the user if
+    // they want to overwrite thair work.
+    if ($isText != "")
+    {
+        $confirm = `confirmDialog -t "Load script?" -m "Are you sure you want to load a script?\nIt will overwrite your work."
+            -ma "center" -b "Yes" -b "No" -db "No" -cb "No" -ds "No" -icn "question"`;
+    }
+    
+    // If the User confirmed to overwrite their script
+    // or there was to text in the script field then
+    // prompt the user for a mel script to load.
+    if (($confirm == "Yes") || ($isText == ""))
+    {
+        // Query working directory and prompt user
+        // for an existing file.
+        string $dir = `workspace -q -dir`;
+        string $filepath[] = `fileDialog2 -ds 2 -cap "Load Script..." -dir $dir -ff "Mel (*.mel)" -sff "Mel" -fm 1`;
+        
+        // If a file path was chosen.
+        if ($filepath[0] != "")
+        {
+            // Open the chosen file and get the
+            // first line.
+            $fileId=`fopen $filepath[0] "r"`;
+            $newline = `fgetline $fileId`;
+            string $text[];
+            
+            // While newline has characters
+            // add to text array newline then get next line.
+            while (size($newline) > 0)
+            {
+                $text[size($text)] = $newline;
+                $newline = `fgetline $fileId`;
+            }
+            
+            // Set script to nothing.
+            $script = "";
+            
+            // For $line in $text append $line to $script
+            for ($line in $text)
+            {
+                $script += $line;
+            }
+            
+            // Close file and reload the scriptField with new script.
+            fclose $fileId;
+            scrollField -e -tx $script $scriptField;
+        }
+    }
+}
+
+////////////////////////////////////////////////////////////
+/////////////////// Procedure: newScript ///////////////////
+////////////////////////////////////////////////////////////
+//                                                        //
+//     This procedure is called when New Script is        //
+// pressed.  It prompts the user if they want to start a  //
+// script without saving, if so then set clear $script    //
+// and reload the scriptField.                            //
+
+proc newScript(string $scriptField)
+{
+    global string $script;
+    
+    string $isText = `scrollField -q -tx $scriptField`;
+    string $new;
+    // If there is text in the scriptField, prompt the user if
+    // they want to start a new script without saving.
+    if ($isText != "")
+    {
+        $new = `confirmDialog -t "New Script?"
+            -m "Are you sure you want to start a\nnew script without saving?"
+            -ma "center" -b "Yes" -b "No" -db "No" -cb "No" -ds "No" -icn "question"`;
+    }
+    
+    // If Yes then clear script.
+    if ($new == "Yes")
+    {
+        $script = "";
+        scrollField -e -tx $script $scriptField;
+    }
+}
+
+////////////////////////////////////////////////////////////
+/////////////////// Procedure: editScript //////////////////
+////////////////////////////////////////////////////////////
+//                                                        //
+//     This procedure is called when Edit Script is       //
+// pressed.  It enables the scriptField for the user to   //
+// type into and disables most everything else so the     //
+// user doesn't mess up their work.  When pressed again   //
+// disables the scriptField and re-enables everything     //
+// else.                                                  //
+
+proc editScript(string $scriptField, string $fileMenu, string $undo, string $redo, string $toolTab)
+{
+    // Set $script and query the state of the scriptField.
+    global string $script;
+    int $state = `scrollField -q -ed $scriptField`;
+    
+    // If scriptField is on then disable it and
+    // enables everything else.  Else enable it
+    // and disable everything else.
+    if ($state)
+    {
+        $script = `scrollField -q -tx $scriptField`;
+        scrollField -e -ed 0 $scriptField;
+        menu -e -en 1 $fileMenu;
+        menuItem -e -en 1 $undo;
+        menuItem -e -en 1 $redo;
+        tabLayout -e -en 1 $toolTab;
+    }else{
+        scrollField -e -ed 1 $scriptField;
+        menu -e -en 0 $fileMenu;
+        menuItem -e -en 0 $undo;
+        menuItem -e -en 0 $redo;
+        tabLayout -e -en 0 $toolTab;
+    }
+}
+
+////////////////////////////////////////////////////////////
+//////////////////// Procedure: showTool ///////////////////
+////////////////////////////////////////////////////////////
+//                                                        //
+//     This procedure is called when Toggle Tool Window   //
+// is pressed.  It toggles the visibility of the Tool     //
+// window, so if the user closed it, then it can be       //
+// reopened.                                              //
+
+proc showTool(string $showTool)
+{
+    if (`window -q -vis scriptToolUI`) 
+    {
+        window -e -vis 0 scriptToolUI;
+    }else{
+        window -e -vis 1 scriptToolUI;
+    }
+}
+
+////////////////////////////////////////////////////////////
+/////////////////// Procedure: showScript //////////////////
+////////////////////////////////////////////////////////////
+//                                                        //
+//     This procedure is called when Toggle Script Window //
+// is pressed.  It toggles the visibility of the Script   //
+// window, so if the user closed it, then it can be       //
+// reopened.                                              //
+
+proc showScript(string $showScript)
+{
+    if (`window -q -vis scriptUI`) 
+    {
+        window -e -vis 0 scriptUI;
+    }else{
+        window -e -vis 1 scriptUI;
+    }
+}
+
+////////////////////////////////////////////////////////////
+//////////////////// Procedure: scriptUI ///////////////////
+////////////////////////////////////////////////////////////
+//                                                        //
+//     This is the main procedure that creates the        //
+// user interface.  Everything is made using form layouts //
+// this allows the user to size the window to how they    //
+// want it.                                               //
+
+global proc scriptUI()
+{
+    // If windows exists then delete them.  Prevents multiple instances of the
+    // same windows.
+    if (`window -q -ex scriptToolUI`) deleteUI scriptToolUI;
+    if (`window -q -ex scriptUI`) deleteUI scriptUI;
+    
+    // Declares global strings.
+    global string $scriptWindow;
+    global string $scriptToolWindow;
+    global string $scriptField;
+    global string $scriptLayout;
+    global string $scriptMenu;
+    global string $script;
+    global string $fileMenu;
+    global string $undo;
+    global string $redo;
+    global string $showTool;
+    global string $showScript;
+    global string $toolTab;
+    global string $logicTab;
+    global string $mayaTab;
+    global string $variableTab;
+    global string $procedureTab;
+    global string $searchCommand;
+    global string $commandListField;
+    global string $searchFlag;
+    global string $flagListField;
+    global string $searchVariable;
+    global string $variableListField;
+    global string $searchProcedure;
+    global string $procedureListField;
+    
+    // This string is used for the Maya Commands tab.
+    global string $mayaCommands[] = {"addAttr", "aimConstraint", "arcLen", "bevel", "bindSkin", "blendShape", "button", "camera",
+         "checkBox", "checkBoxGrp", "circle", "cluster", "collision", "columnLayout", "cone", "confirmDialog", "connectAttr",
+         "connectDynamic", "createNode", "curve", "cylinder", "delete", "deleteAttr", "deleteUI", "disconnectAttr", "duplicate",
+         "duplicateCurve", "duplicateSurface", "dynExpression", "emit", "emitter", "error", "eval", "exists", "expression",
+         "extendCurve", "extrude", "file", "fileDialog2", "filletCurve", "flexor", "floatField", "floatFieldGrp",
+         "floatScrollBar", "floatSlider", "floatSlider2", "floatSliderButtonGrp", "floatSliderGrp", "flow", "flowLayout",
+         "fluidEmitter", "formLayout", "frameLayout", "geometryConstraint", "getAttr", "getFluidAttr", "getParticleAttr",
+         "goal", "gravity", "grid", "gridLayout", "group", "hide", "hudButton", "hudSlider", "hudSliderButton", "iconTextButton",
+         "iconTextCheckBox", "iconTextRadioButton", "iconTextRadioCollection", "iconTextScrollList", "iconTextStaticLabel",
+         "ikHandle", "ikSolver", "insertJoint", "insertKnotCurve", "insertKnotSurface", "instance", "intersect", "intField",
+         "intFieldGrp", "intScrollBar", "intSlider", "intSliderGrp", "joint", "jointCluster", "jointLattice", "keyframe",
+         "lattice", "layerButton", "layout", "layoutDialog", "lightlink", "listAttr", "ls", "makeIdentity", "match", "menu",
+         "menuBarLayout", "menuEditor", "menuItem", "mirrorJoint", "move", "newton", "normalConstrint", "nurbsBoolean",
+         "nurbsCube", "nurbsPlane", "nurbsSquare", "nurbsToPoly", "objectCenter", "objExists", "offsetCurve", "optionMenu",
+         "optionMenuGrp", "orbit", "orientConstraint", "panelLayout", "paramLocator", "parent", "parentConstraint",
+         "particle", "particleExists", "plane", "play", "playBackOptions", "playblast", "pointConstraint", "pointLight",
+         "pointOnCurve", "pointOnPolyConstraint", "pointOnSurface", "poleVectorConstraint", "polyAppend", "polyBevel",
+         "polyBoolOp", "polyCone", "polyCube", "polyCylinder", "polyPlane", "polySphere", "polyTorus", "popupMenu", "print",
+         "progressBar", "radial", "radioButton", "radioButtonGrp", "radioCollection", "refresh", "revolve", "rotate",
+         "rowColumnLayout", "rowLayout", "scale", "scaleConstraint", "scriptNode", "scrollField", "scrollLayout", "select",
+         "setAttr", "setDrivenKeyframe", "setKeyframe", "sets", "shadingNode", "showWindow", "skinCluster", "spaceLocator",
+         "sphere", "spotLight", "surface", "tabLayout", "text", "textCurves", "textField", "textFieldButtonGrp", "textFieldGrp",
+         "textScrollList", "timer", "tokenisze", "tokenizeList", "torus", "turbulence", "vortex", "warning", "window", "xform"};
+    
+    // Query the users script color settings, this is used to color the buttons.
+    vector $syntaxText = `displayRGBColor -q syntaxText`;
+    vector $syntaxKey = `displayRGBColor -q syntaxKeywords`;
+    vector $syntaxString = `displayRGBColor -q syntaxStrings`;
+    vector $syntaxComment = `displayRGBColor -q syntaxComments`;
+    vector $syntaxCommand = `displayRGBColor -q syntaxCommands`;
+    
+    // Creates the Script Tool Window... this section is long, I don't want to comment it.
+    $scriptToolWindow = `window -t "User Friendly Scripting Tool" -s 1 -mb 1 -tlc 5 825 -wh 550 800 -ret scriptToolUI`;
+    
+        menu -l "Window" -hm 1 ;
+            $showScript = `menuItem -l "Toggle Script Window" -c "showScript($showScript)"`;
+        $form = `formLayout -nd 100 "form"`;
+        $toolTab = `tabLayout -imw 5 -imh 10 "toolTab"`;
+                            
+            $logicTab = `formLayout -nd 225 "Logic"`;
+                $maths = `frameLayout -l "Maths"`;
+                    $mathsForm = `formLayout -nd 71`;
+                    $blah = "blah";
+                        $a1 = `button -w 10 -h 10 -bgc ($syntaxText.x) ($syntaxText.y) ($syntaxText.z) -l "+" -rs 0 -c "$script += \"+ \"; scrollField -e -tx $script $scriptField;"`;
+                        $a2 = `button -w 10 -h 10 -bgc ($syntaxText.x) ($syntaxText.y) ($syntaxText.z) -l "*" -rs 0 -c "$script += \"* \"; scrollField -e -tx $script $scriptField;"`;
+                        $a3 = `button -w 10 -h 10 -bgc ($syntaxText.x) ($syntaxText.y) ($syntaxText.z) -l "=" -rs 0 -c "$script += \"= \"; scrollField -e -tx $script $scriptField;"`;
+                        $a4 = `button -w 10 -h 10 -bgc ($syntaxText.x) ($syntaxText.y) ($syntaxText.z) -l "." -rs 0 -c "$script += \". \"; scrollField -e -tx $script $scriptField;"`;
+                        $a5 = `button -w 10 -h 10 -bgc 1.0 0.7 0.0 -l "Number" -rs 0 -c "number($scriptField)"`;
+                        $a7 = `button -w 10 -h 10 -bgc ($syntaxText.x) ($syntaxText.y) ($syntaxText.z) -l "-" -rs 0 -c "$script += \"- \"; scrollField -e -tx $script $scriptField;"`;
+                        $a8 = `button -w 10 -h 10 -bgc ($syntaxText.x) ($syntaxText.y) ($syntaxText.z) -l "/" -rs 0 -c "$script += \"/ \"; scrollField -e -tx $script $scriptField;"`;
+                        $a9 = `button -w 10 -h 10 -bgc ($syntaxText.x) ($syntaxText.y) ($syntaxText.z) -l "!" -rs 0 -c "$script += \"! \"; scrollField -e -tx $script $scriptField;"`;
+                        $a10 = `button -w 10 -h 10 -bgc ($syntaxText.x) ($syntaxText.y) ($syntaxText.z) -l ":" -rs 0 -c "$script += \": \"; scrollField -e -tx $script $scriptField;"`;
+                        $a13 = `button -w 10 -h 10 -bgc ($syntaxText.x) ($syntaxText.y) ($syntaxText.z) -l "<" -rs 0 -c "$script += \"< \"; scrollField -e -tx $script $scriptField;"`;
+                        $a14 = `button -w 10 -h 10 -bgc ($syntaxText.x) ($syntaxText.y) ($syntaxText.z) -l ">" -rs 0 -c "$script += \"> \"; scrollField -e -tx $script $scriptField;"`;
+                        $a15 = `button -w 10 -h 10 -bgc ($syntaxText.x) ($syntaxText.y) ($syntaxText.z) -l "&&&&" -rs 0 -c "$script += \"&& \"; scrollField -e -tx $script $scriptField;"`;
+                        $a16 = `button -w 10 -h 10 -bgc ($syntaxText.x) ($syntaxText.y) ($syntaxText.z) -l ";" -rs 0 -c "$script += \"; \"; scrollField -e -tx $script $scriptField;"`;
+                        $a19 = `button -w 10 -h 10 -bgc ($syntaxText.x) ($syntaxText.y) ($syntaxText.z) -l "(" -rs 0 -c "$script += \"( \"; scrollField -e -tx $script $scriptField;"`;
+                        $a20 = `button -w 10 -h 10 -bgc ($syntaxText.x) ($syntaxText.y) ($syntaxText.z) -l ")" -rs 0 -c "$script += \") \"; scrollField -e -tx $script $scriptField;"`;
+                        $a21 = `button -w 10 -h 10 -bgc ($syntaxText.x) ($syntaxText.y) ($syntaxText.z) -l "||" -rs 0 -c "$script += \"|| \"; scrollField -e -tx $script $scriptField;"`;
+                        $a22 = `button -w 10 -h 10 -bgc ($syntaxText.x) ($syntaxText.y) ($syntaxText.z) -l "," -rs 0 -c "$script += \", \"; scrollField -e -tx $script $scriptField;"`;
+                        $a25 = `button -w 10 -h 10 -bgc ($syntaxText.x) ($syntaxText.y) ($syntaxText.z) -l "[" -rs 0 -c "$script += \"[ \"; scrollField -e -tx $script $scriptField;"`;
+                        $a26 = `button -w 10 -h 10 -bgc ($syntaxText.x) ($syntaxText.y) ($syntaxText.z) -l "]" -rs 0 -c "$script += \"] \"; scrollField -e -tx $script $scriptField;"`;
+                        $a27 = `button -w 10 -h 10 -bgc ($syntaxText.x) ($syntaxText.y) ($syntaxText.z) -l "{" -rs 0 -c "$script += \"{ \"; scrollField -e -tx $script $scriptField;"`;
+                        $a28 = `button -w 10 -h 10 -bgc ($syntaxText.x) ($syntaxText.y) ($syntaxText.z) -l "}" -rs 0 -c "$script += \"} \"; scrollField -e -tx $script $scriptField;"`;
+                        $a29 = `button -w 10 -h 10 -bgc ($syntaxText.x) ($syntaxText.y) ($syntaxText.z) -l "<<" -rs 0 -c "$script += \"<< \"; scrollField -e -tx $script $scriptField;"`;
+                        $a30 = `button -w 10 -h 10 -bgc ($syntaxText.x) ($syntaxText.y) ($syntaxText.z) -l ">>" -rs 0 -c "$script += \">> \"; scrollField -e -tx $script $scriptField;"`;
+                        $a31 = `button -w 10 -h 10 -bgc ($syntaxText.x) ($syntaxText.y) ($syntaxText.z) -l "+=" -rs 0 -c "$script += \"+= \"; scrollField -e -tx $script $scriptField;"`;
+                        $a32 = `button -w 10 -h 10 -bgc ($syntaxText.x) ($syntaxText.y) ($syntaxText.z) -l "-=" -rs 0 -c "$script += \"-= \"; scrollField -e -tx $script $scriptField;"`;
+                        $a33 = `button -w 10 -h 10 -bgc ($syntaxText.x) ($syntaxText.y) ($syntaxText.z) -l "<=" -rs 0 -c "$script += \"<= \"; scrollField -e -tx $script $scriptField;"`;
+                        $a34 = `button -w 10 -h 10 -bgc ($syntaxText.x) ($syntaxText.y) ($syntaxText.z) -l ">=" -rs 0 -c "$script += \">= \"; scrollField -e -tx $script $scriptField;"`;
+                        $a35 = `button -w 10 -h 10 -bgc ($syntaxText.x) ($syntaxText.y) ($syntaxText.z) -l "==" -rs 0 -c "$script += \"== \"; scrollField -e -tx $script $scriptField;"`;
+                        $a36 = `button -w 10 -h 10 -bgc ($syntaxText.x) ($syntaxText.y) ($syntaxText.z) -l "!=" -rs 0 -c "$script += \"!= \"; scrollField -e -tx $script $scriptField;"`;
+                        
+                        formLayout -e
+                            -attachForm $a1 "top" 5
+                            -attachForm $a1 "left" 5
+                            -attachPosition $a1 "bottom" 0 11
+                            -attachPosition $a1 "right" 0 11
+                            
+                            -attachForm $a2 "top" 5
+                            -attachControl $a2 "left" 5 $a1
+                            -attachPosition $a2 "bottom" 0 11
+                            -attachPosition $a2 "right" 0 22
+                            
+                            -attachForm $a3 "top" 5
+                            -attachControl $a3 "left" 5 $a2
+                            -attachPosition $a3 "bottom" 0 11
+                            -attachPosition $a3 "right" 0 33
+                            
+                            -attachForm $a4 "top" 5
+                            -attachControl $a4 "left" 5 $a3
+                            -attachPosition $a4 "bottom" 0 11
+                            -attachPosition $a4 "right" 0 44
+                            
+                            -attachForm $a5 "top" 5
+                            -attachControl $a5 "left" 5 $a4
+                            -attachPosition $a5 "bottom" 0 44
+                            -attachForm $a5 "right" 5
+                            
+                            -attachControl $a7 "top" 5 $a1
+                            -attachForm $a7 "left" 5
+                            -attachPosition $a7 "bottom" 0 22
+                            -attachPosition $a7 "right" 0 11
+                            
+                            -attachControl $a8 "top" 5 $a2
+                            -attachControl $a8 "left" 5 $a7
+                            -attachPosition $a8 "bottom" 0 22
+                            -attachPosition $a8 "right" 0 22
+                            
+                            -attachControl $a9 "top" 5 $a3
+                            -attachControl $a9 "left" 5 $a8
+                            -attachPosition $a9 "bottom" 0 22
+                            -attachPosition $a9 "right" 0 33
+                            
+                            -attachControl $a10 "top" 5 $a4
+                            -attachControl $a10 "left" 5 $a9
+                            -attachPosition $a10 "bottom" 0 22
+                            -attachPosition $a10 "right" 0 44
+                            
+                            -attachControl $a13 "top" 5 $a7
+                            -attachForm $a13 "left" 5
+                            -attachPosition $a13 "bottom" 0 33
+                            -attachPosition $a13 "right" 0 11
+                            
+                            -attachControl $a14 "top" 5 $a8
+                            -attachControl $a14 "left" 5 $a13
+                            -attachPosition $a14 "bottom" 0 33
+                            -attachPosition $a14 "right" 0 22
+                            
+                            -attachControl $a15 "top" 5 $a9
+                            -attachControl $a15 "left" 5 $a14
+                            -attachPosition $a15 "bottom" 0 33
+                            -attachPosition $a15 "right" 0 33
+                            
+                            -attachControl $a16 "top" 5 $a10
+                            -attachControl $a16 "left" 5 $a15
+                            -attachPosition $a16 "bottom" 0 33
+                            -attachPosition $a16 "right" 0 44
+                            
+                            -attachControl $a19 "top" 5 $a13
+                            -attachForm $a19 "left" 5
+                            -attachPosition $a19 "bottom" 0 44
+                            -attachPosition $a19 "right" 0 11
+                            
+                            -attachControl $a20 "top" 5 $a14
+                            -attachControl $a20 "left" 5 $a19
+                            -attachPosition $a20 "bottom" 0 44
+                            -attachPosition $a20 "right" 0 22
+                            
+                            -attachControl $a21 "top" 5 $a15
+                            -attachControl $a21 "left" 5 $a20
+                            -attachPosition $a21 "bottom" 0 44
+                            -attachPosition $a21 "right" 0 33
+                            
+                            -attachControl $a22 "top" 5 $a16
+                            -attachControl $a22 "left" 5 $a21
+                            -attachPosition $a22 "bottom" 0 44
+                            -attachPosition $a22 "right" 0 44
+                            
+                            -attachControl $a25 "top" 5 $a19
+                            -attachForm $a25 "left" 5
+                            -attachPosition $a25 "bottom" 0 55
+                            -attachPosition $a25 "right" 0 11
+                            
+                            -attachControl $a26 "top" 5 $a20
+                            -attachControl $a26 "left" 5 $a25
+                            -attachPosition $a26 "bottom" 0 55
+                            -attachPosition $a26 "right" 0 22
+                            
+                            -attachControl $a27 "top" 5 $a21
+                            -attachControl $a27 "left" 5 $a26
+                            -attachPosition $a27 "bottom" 0 55
+                            -attachPosition $a27 "right" 0 33
+                            
+                            -attachControl $a28 "top" 5 $a22
+                            -attachControl $a28 "left" 5 $a27
+                            -attachPosition $a28 "bottom" 0 55
+                            -attachPosition $a28 "right" 0 44
+                            
+                            -attachControl $a29 "top" 5 $a5
+                            -attachControl $a29 "left" 5 $a28
+                            -attachPosition $a29 "bottom" 0 55
+                            -attachPosition $a29 "right" 0 55
+                            
+                            -attachControl $a30 "top" 5 $a5
+                            -attachControl $a30 "left" 5 $a29
+                            -attachPosition $a30 "bottom" 0 55
+                            -attachForm $a30 "right" 5
+                            
+                            -attachControl $a31 "top" 5 $a25
+                            -attachForm $a31 "left" 5
+                            -attachForm $a31 "bottom" 5
+                            -attachPosition $a31 "right" 0 11
+                            
+                            -attachControl $a32 "top" 5 $a26
+                            -attachControl $a32 "left" 5 $a31
+                            -attachForm $a32 "bottom" 5
+                            -attachPosition $a32 "right" 0 22
+                            
+                            -attachControl $a33 "top" 5 $a27
+                            -attachControl $a33 "left" 5 $a32
+                            -attachForm $a33 "bottom" 5
+                            -attachPosition $a33 "right" 0 33
+                            
+                            -attachControl $a34 "top" 5 $a28
+                            -attachControl $a34 "left" 5 $a33
+                            -attachForm $a34 "bottom" 5
+                            -attachPosition $a34 "right" 0 44
+                            
+                            -attachControl $a35 "top" 5 $a29
+                            -attachControl $a35 "left" 5 $a34
+                            -attachForm $a35 "bottom" 5
+                            -attachPosition $a35 "right" 0 55
+                            
+                            -attachControl $a36 "top" 5 $a30
+                            -attachControl $a36 "left" 5 $a35
+                            -attachForm $a36 "bottom" 5
+                            -attachForm $a36 "right" 5
+                            
+                        $mathsForm;
+                    setParent ..;
+                setParent ..;
+                
+                $condsLoops = `frameLayout -l "Conditionals & Loops"`;
+                    $condsLoopsForm = `formLayout -nd 110`;
+                    
+                        $b1 = `button -w 10 -h 10 -bgc ($syntaxKey.x) ($syntaxKey.y) ($syntaxKey.z) -l "if" -rs 0 -c "$script += \"if \"; scrollField -e -tx $script $scriptField;"`;
+                        $b2 = `button -w 10 -h 10 -bgc ($syntaxKey.x) ($syntaxKey.y) ($syntaxKey.z) -l "else" -rs 0 -c "$script += \"else \"; scrollField -e -tx $script $scriptField;"`;
+                        $b3 = `button -w 10 -h 10 -bgc ($syntaxKey.x) ($syntaxKey.y) ($syntaxKey.z) -l "in" -rs 0 -c "$script += \"in \"; scrollField -e -tx $script $scriptField;"`;
+                        $b4 = `button -w 10 -h 10 -bgc ($syntaxKey.x) ($syntaxKey.y) ($syntaxKey.z) -l "switch" -rs 0 -c "$script += \"switch \"; scrollField -e -tx $script $scriptField;"`;
+                        $b5 = `button -w 10 -h 10 -bgc ($syntaxKey.x) ($syntaxKey.y) ($syntaxKey.z) -l "case" -rs 0 -c "$script += \"case \"; scrollField -e -tx $script $scriptField;"`;
+                        $b6 = `button -w 10 -h 10 -bgc ($syntaxKey.x) ($syntaxKey.y) ($syntaxKey.z) -l "break" -rs 0 -c "$script += \"break \"; scrollField -e -tx $script $scriptField;"`;
+                        $b7 = `button -w 10 -h 10 -bgc ($syntaxKey.x) ($syntaxKey.y) ($syntaxKey.z) -l "for" -rs 0 -c "$script += \"for \"; scrollField -e -tx $script $scriptField;"`;
+                        $b8 = `button -w 10 -h 10 -bgc ($syntaxKey.x) ($syntaxKey.y) ($syntaxKey.z) -l "do" -rs 0 -c "$script += \"do \"; scrollField -e -tx $script $scriptField;"`;
+                        $b9 = `button -w 10 -h 10 -bgc ($syntaxKey.x) ($syntaxKey.y) ($syntaxKey.z) -l "while" -rs 0 -c "$script += \"while \"; scrollField -e -tx $script $scriptField;"`;
+                        
+                        formLayout -e
+                            -attachForm $b1 "top" 5
+                            -attachForm $b1 "left" 5
+                            -attachPosition $b1 "bottom" 0 35
+                            -attachPosition $b1 "right" 0 35
+                            
+                            -attachForm $b2 "top" 5
+                            -attachControl $b2 "left" 5 $b1
+                            -attachPosition $b2 "bottom" 0 35
+                            -attachPosition $b2 "right" 0 70
+                            
+                            -attachForm $b3 "top" 5
+                            -attachControl $b3 "left" 5 $b2
+                            -attachPosition $b3 "bottom" 0 35
+                            -attachForm $b3 "right" 5
+                            
+                            -attachControl $b4 "top" 5 $b1
+                            -attachForm $b4 "left" 5
+                            -attachPosition $b4 "bottom" 0 70
+                            -attachPosition $b4 "right" 0 35
+                            
+                            -attachControl $b5 "top" 5 $b2
+                            -attachControl $b5 "left" 5 $b4
+                            -attachPosition $b5 "bottom" 0 70
+                            -attachPosition $b5 "right" 0 70
+                            
+                            -attachControl $b6 "top" 5 $b3
+                            -attachControl $b6 "left" 5 $b5
+                            -attachPosition $b6 "bottom" 0 70
+                            -attachForm $b6 "right" 5
+                            
+                            -attachControl $b7 "top" 5 $b4
+                            -attachForm $b7 "left" 5
+                            -attachForm $b7 "bottom" 5
+                            -attachPosition $b7 "right" 0 35
+                            
+                            -attachControl $b8 "top" 5 $b5
+                            -attachControl $b8 "left" 5 $b7
+                            -attachForm $b8 "bottom" 5
+                            -attachPosition $b8 "right" 0 70
+                            
+                            -attachControl $b9 "top" 5 $b6
+                            -attachControl $b9 "left" 5 $b8
+                            -attachForm $b9 "bottom" 5
+                            -attachForm $b9 "right" 5
+                            
+                        $condsLoopsForm;
+                    setParent ..;
+                setParent ..;
+                
+                $varProc = `frameLayout -l "Variables & Procedures"`;
+                    $varProcForm = `formLayout -nd 105`;
+                    
+                        $c1 = `button -w 10 -h 10 -bgc ($syntaxKey.x) ($syntaxKey.y) ($syntaxKey.z) -l "int" -rs 0 -c "$script += \"int \"; scrollField -e -tx $script $scriptField;"`;
+                        $c2 = `button -w 10 -h 10 -bgc ($syntaxKey.x) ($syntaxKey.y) ($syntaxKey.z) -l "float" -rs 0 -c "$script += \"float \"; scrollField -e -tx $script $scriptField;"`;
+                        $c3 = `button -w 10 -h 10 -bgc ($syntaxKey.x) ($syntaxKey.y) ($syntaxKey.z) -l "string" -rs 0 -c "$script += \"string \"; scrollField -e -tx $script $scriptField;"`;
+                        $c4 = `button -w 10 -h 10 -bgc ($syntaxKey.x) ($syntaxKey.y) ($syntaxKey.z) -l "vector" -rs 0 -c "$script += \"vector \"; scrollField -e -tx $script $scriptField;"`;
+                        $c5 = `button -w 10 -h 10 -bgc ($syntaxKey.x) ($syntaxKey.y) ($syntaxKey.z) -l "matrix" -rs 0 -c "$script += \"matrix \"; scrollField -e -tx $script $scriptField;"`;
+                        $c6 = `button -w 10 -h 10 -bgc ($syntaxKey.x) ($syntaxKey.y) ($syntaxKey.z) -l "return" -rs 0 -c "$script += \"return \"; scrollField -e -tx $script $scriptField;"`;
+                        $c7 = `button -w 10 -h 10 -bgc ($syntaxKey.x) ($syntaxKey.y) ($syntaxKey.z) -l "global" -rs 0 -c "$script += \"global \"; scrollField -e -tx $script $scriptField;"`;
+                        $c8 = `button -w 10 -h 10 -bgc ($syntaxKey.x) ($syntaxKey.y) ($syntaxKey.z) -l "proc" -rs 0 -c "$script += \"proc \"; scrollField -e -tx $script $scriptField;"`;
+                        
+                        formLayout -e
+                            -attachForm $c1 "top" 5
+                            -attachForm $c1 "left" 5
+                            -attachPosition $c1 "bottom" 0 25
+                            -attachPosition $c1 "right" 0 50
+                            
+                            -attachForm $c2 "top" 5
+                            -attachControl $c2 "left" 5 $c1
+                            -attachPosition $c2 "bottom" 0 25
+                            -attachForm $c2 "right" 5
+                            
+                            -attachControl $c3 "top" 5 $c1
+                            -attachForm $c3 "left" 5
+                            -attachPosition $c3 "bottom" 0 50
+                            -attachPosition $c3 "right" 0 50
+                            
+                            -attachControl $c4 "top" 5 $c2
+                            -attachControl $c4 "left" 5 $c3
+                            -attachPosition $c4 "bottom" 0 50
+                            -attachForm $c4 "right" 5
+                            
+                            -attachControl $c5 "top" 5 $c3
+                            -attachForm $c5 "left" 5
+                            -attachPosition $c5 "bottom" 0 75
+                            -attachPosition $c5 "right" 0 50
+                            
+                            -attachControl $c6 "top" 5 $c4
+                            -attachControl $c6 "left" 5 $c5
+                            -attachPosition $c6 "bottom" 0 75
+                            -attachForm $c6 "right" 5
+                            
+                            -attachControl $c7 "top" 5 $c5
+                            -attachForm $c7 "left" 5
+                            -attachForm $c7 "bottom" 5
+                            -attachPosition $c7 "right" 0 50
+                            
+                            -attachControl $c8 "top" 5 $c6
+                            -attachControl $c8 "left" 5 $c7
+                            -attachForm $c8 "bottom" 5
+                            -attachForm $c8 "right" 5
+                            
+                        $varProcForm;
+                    setParent ..;
+                setParent ..;
+                
+                $strings = `frameLayout -l "Strings and String Commands"`;
+                    $stringsForm = `formLayout -nd 205`;
+                    
+                        $d1 = `button -w 10 -h 10 -bgc ($syntaxString.x) ($syntaxString.y) ($syntaxString.z) -l "\"    \"  String" -rs 0 -c "insertString($scriptField)"`;
+                        $d2 = `button -w 10 -h 10 -bgc ($syntaxComment.x) ($syntaxComment.y) ($syntaxComment.z) -l "/*    */  Comment" -rs 0 -c "comment($scriptField)"`;
+                        $d3 = `button -w 10 -h 10 -bgc ($syntaxCommand.x) ($syntaxCommand.y) ($syntaxCommand.z) -l "`  Backtick" -rs 0 -c "$script += \"` \"; scrollField -e -tx $script $scriptField;"`;
+                        $d4 = `button -w 10 -h 10 -bgc ($syntaxString.x) ($syntaxString.y) ($syntaxString.z) -l "\\ t  Tab" -rs 0 -c "$script += \"\t\"; scrollField -e -tx $script $scriptField;"`;
+                        $d5 = `button -w 10 -h 10 -bgc ($syntaxString.x) ($syntaxString.y) ($syntaxString.z) -l "\\ n  Newline" -rs 0 -c "$script += \"\\n\"; scrollField -e -tx $script $scriptField;"`;
+                        $d7 = `button -w 10 -h 10 -bgc ($syntaxString.x) ($syntaxString.y) ($syntaxString.z) -l "Space" -rs 0 -c "$script += \" \"; scrollField -e -tx $script $scriptField;"`;
+                        $d8 = `button -w 10 -h 10 -bgc ($syntaxCommand.x) ($syntaxCommand.y) ($syntaxCommand.z) -l "endString" -rs 0 -c "$script += \"endString \"; scrollField -e -tx $script $scriptField;"`;
+                        $d9 = `button -w 10 -h 10 -bgc ($syntaxCommand.x) ($syntaxCommand.y) ($syntaxCommand.z) -l "startString" -rs 0 -c "$script += \"startString \"; scrollField -e -tx $script $scriptField;"`;
+                        $d10 = `button -w 10 -h 10 -bgc ($syntaxCommand.x) ($syntaxCommand.y) ($syntaxCommand.z) -l "substitute" -rs 0 -c "$script += \"substitute \"; scrollField -e -tx $script $scriptField;"`;
+                        $d11 = `button -w 10 -h 10 -bgc ($syntaxCommand.x) ($syntaxCommand.y) ($syntaxCommand.z) -l "size" -rs 0 -c "$script += \"size \"; scrollField -e -tx $script $scriptField;"`;
+                        $d12 = `button -w 10 -h 10 -bgc ($syntaxCommand.x) ($syntaxCommand.y) ($syntaxCommand.z) -l "sort" -rs 0 -c "$script += \"sort \"; scrollField -e -tx $script $scriptField;"`;
+                        $d13 = `button -w 10 -h 10 -bgc ($syntaxCommand.x) ($syntaxCommand.y) ($syntaxCommand.z) -l "endsWith" -rs 0 -c "$script += \"endsWith \"; scrollField -e -tx $script $scriptField;"`;
+                        $d14 = `button -w 10 -h 10 -bgc ($syntaxCommand.x) ($syntaxCommand.y) ($syntaxCommand.z) -l "startsWith" -rs 0 -c "$script += \"startsWith \"; scrollField -e -tx $script $scriptField;"`;
+                        $d15 = `button -w 10 -h 10 -bgc ($syntaxCommand.x) ($syntaxCommand.y) ($syntaxCommand.z) -l "substituteAllString" -rs 0 -c "$script += \"substituteAllString \"; scrollField -e -tx $script $scriptField;"`;
+                        $d16 = `button -w 10 -h 10 -bgc ($syntaxCommand.x) ($syntaxCommand.y) ($syntaxCommand.z) -l "strcmp" -rs 0 -c "$script += \"strcmp \"; scrollField -e -tx $script $scriptField;"`;
+                        $d17 = `button -w 10 -h 10 -bgc ($syntaxCommand.x) ($syntaxCommand.y) ($syntaxCommand.z) -l "tokenize" -rs 0 -c "$script += \"tokenize \"; scrollField -e -tx $script $scriptField;"`;
+                        $d18 = `button -w 10 -h 10 -bgc ($syntaxCommand.x) ($syntaxCommand.y) ($syntaxCommand.z) -l "match" -rs 0 -c "$script += \"match \"; scrollField -e -tx $script $scriptField;"`;
+                        $d19 = `button -w 10 -h 10 -bgc ($syntaxCommand.x) ($syntaxCommand.y) ($syntaxCommand.z) -l "gmatch" -rs 0 -c "$script += \"gmatch \"; scrollField -e -tx $script $scriptField;"`;
+                        $d20 = `button -w 10 -h 10 -bgc ($syntaxCommand.x) ($syntaxCommand.y) ($syntaxCommand.z) -l "substring" -rs 0 -c "$script += \"substring \"; scrollField -e -tx $script $scriptField;"`;
+                        $d21 = `button -w 10 -h 10 -bgc ($syntaxCommand.x) ($syntaxCommand.y) ($syntaxCommand.z) -l "tolower" -rs 0 -c "$script += \"tolower \"; scrollField -e -tx $script $scriptField;"`;
+                        $d22 = `button -w 10 -h 10 -bgc ($syntaxCommand.x) ($syntaxCommand.y) ($syntaxCommand.z) -l "toupper" -rs 0 -c "$script += \"toupper \"; scrollField -e -tx $script $scriptField;"`;
+                        
+                        formLayout -e
+                            -attachForm $d1 "top" 5
+                            -attachForm $d1 "left" 7
+                            -attachPosition $d1 "bottom" 0 40
+                            -attachPosition $d1 "right" 0 66
+                            
+                            -attachForm $d2 "top" 5
+                            -attachControl $d2 "left" 7 $d1
+                            -attachPosition $d2 "bottom" 0 40
+                            -attachPosition $d2 "right" 0 132
+                            
+                            -attachForm $d3 "top" 5
+                            -attachControl $d3 "left" 7 $d2
+                            -attachPosition $d3 "bottom" 0 40
+                            -attachForm $d3 "right" 7
+                            
+                            -attachControl $d4 "top" 5 $d1
+                            -attachForm $d4 "left" 7
+                            -attachPosition $d4 "bottom" 0 80
+                            -attachPosition $d4 "right" 0 66
+                            
+                            -attachControl $d5 "top" 5 $d1
+                            -attachControl $d5 "left" 7 $d4
+                            -attachPosition $d5 "bottom" 0 80
+                            -attachPosition $d5 "right" 0 132
+                            
+                            -attachControl $d7 "top" 5 $d3
+                            -attachControl $d7 "left" 7 $d5
+                            -attachPosition $d7 "bottom" 0 80
+                            -attachForm $d7 "right" 7
+                            
+                            -attachControl $d8 "top" 5 $d4
+                            -attachForm $d8 "left" 5
+                            -attachPosition $d8 "bottom" 0 120
+                            -attachPosition $d8 "right" 0 40
+                            
+                            -attachControl $d9 "top" 5 $d5
+                            -attachControl $d9 "left" 5 $d8
+                            -attachPosition $d9 "bottom" 0 120
+                            -attachPosition $d9 "right" 0 80
+                            
+                            -attachControl $d10 "top" 5 $d5
+                            -attachControl $d10 "left" 5 $d9
+                            -attachPosition $d10 "bottom" 0 120
+                            -attachPosition $d10 "right" 0 120
+                            
+                            -attachControl $d11 "top" 5 $d5
+                            -attachControl $d11 "left" 5 $d10
+                            -attachPosition $d11 "bottom" 0 120
+                            -attachPosition $d11 "right" 0 160
+                            
+                            -attachControl $d12 "top" 5 $d7
+                            -attachControl $d12 "left" 5 $d11
+                            -attachPosition $d12 "bottom" 0 120
+                            -attachForm $d12 "right" 5
+                            
+                            -attachControl $d13 "top" 5 $d8
+                            -attachForm $d13 "left" 5
+                            -attachPosition $d13 "bottom" 0 160
+                            -attachPosition $d13 "right" 0 40
+                            
+                            -attachControl $d14 "top" 5 $d9
+                            -attachControl $d14 "left" 5 $d13
+                            -attachPosition $d14 "bottom" 0 160
+                            -attachPosition $d14 "right" 0 80
+                            
+                            -attachControl $d15 "top" 5 $d10
+                            -attachControl $d15 "left" 5 $d14
+                            -attachPosition $d15 "bottom" 0 160
+                            -attachPosition $d15 "right" 0 120
+                            
+                            -attachControl $d16 "top" 5 $d11
+                            -attachControl $d16 "left" 5 $d15
+                            -attachPosition $d16 "bottom" 0 160
+                            -attachPosition $d16 "right" 0 160
+                            
+                            -attachControl $d17 "top" 5 $d12
+                            -attachControl $d17 "left" 5 $d16
+                            -attachPosition $d17 "bottom" 0 160
+                            -attachForm $d17 "right" 5
+                            
+                            -attachControl $d18 "top" 5 $d13
+                            -attachForm $d18 "left" 5
+                            -attachForm $d18 "bottom" 5
+                            -attachPosition $d18 "right" 0 40
+                            
+                            -attachControl $d19 "top" 5 $d14
+                            -attachControl $d19 "left" 5 $d18
+                            -attachForm $d19 "bottom" 5
+                            -attachPosition $d19 "right" 0 80
+                            
+                            -attachControl $d20 "top" 5 $d15
+                            -attachControl $d20 "left" 5 $d19
+                            -attachForm $d20 "bottom" 5
+                            -attachPosition $d20 "right" 0 120
+                            
+                            -attachControl $d21 "top" 5 $d16
+                            -attachControl $d21 "left" 5 $d20
+                            -attachForm $d21 "bottom" 5
+                            -attachPosition $d21 "right" 0 160
+                            
+                            -attachControl $d22 "top" 5 $d17
+                            -attachControl $d22 "left" 5 $d21
+                            -attachForm $d22 "bottom" 5
+                            -attachForm $d22 "right" 5
+                            
+                        $stringsForm;
+                    setParent ..;
+                setParent ..;
+                
+                $functions = `frameLayout -l "Math Functions"`;
+                    $functionsForm = `formLayout -nd 205`;
+                    
+                        $e1 = `button -w 10 -h 10 -bgc ($syntaxText.x) ($syntaxText.y) ($syntaxText.z) -l "abs" -rs 0 -c "$script += \"abs \"; scrollField -e -tx $script $scriptField;"`;
+                        $e2 = `button -w 10 -h 10 -bgc ($syntaxText.x) ($syntaxText.y) ($syntaxText.z) -l "exp" -rs 0 -c "$script += \"exp\"; scrollField -e -tx $script $scriptField;"`;
+                        $e3 = `button -w 10 -h 10 -bgc ($syntaxText.x) ($syntaxText.y) ($syntaxText.z) -l "sin" -rs 0 -c "$script += \"sin \"; scrollField -e -tx $script $scriptField;"`;
+                        $e4 = `button -w 10 -h 10 -bgc ($syntaxText.x) ($syntaxText.y) ($syntaxText.z) -l "cos" -rs 0 -c "$script += \"cos \"; scrollField -e -tx $script $scriptField;"`;
+                        $e5 = `button -w 10 -h 10 -bgc ($syntaxText.x) ($syntaxText.y) ($syntaxText.z) -l "tan" -rs 0 -c "$script += \"tan \"; scrollField -e -tx $script $scriptField;"`;
+                        $e6 = `button -w 10 -h 10 -bgc ($syntaxText.x) ($syntaxText.y) ($syntaxText.z) -l "pow" -rs 0 -c "$script += \"pow \"; scrollField -e -tx $script $scriptField;"`;
+                        $e7 = `button -w 10 -h 10 -bgc ($syntaxText.x) ($syntaxText.y) ($syntaxText.z) -l "sqrt" -rs 0 -c "$script += \"sqrt \"; scrollField -e -tx $script $scriptField;"`;
+                        $e8 = `button -w 10 -h 10 -bgc ($syntaxText.x) ($syntaxText.y) ($syntaxText.z) -l "fmod" -rs 0 -c "$script += \"fmod \"; scrollField -e -tx $script $scriptField;"`;
+                        $e9 = `button -w 10 -h 10 -bgc ($syntaxText.x) ($syntaxText.y) ($syntaxText.z) -l "log" -rs 0 -c "$script += \"log \"; scrollField -e -tx $script $scriptField;"`;
+                        $e10 = `button -w 10 -h 10 -bgc ($syntaxText.x) ($syntaxText.y) ($syntaxText.z) -l "sign" -rs 0 -c "$script += \"sign \"; scrollField -e -tx $script $scriptField;"`;
+                        $e11 = `button -w 10 -h 10 -bgc ($syntaxText.x) ($syntaxText.y) ($syntaxText.z) -l "angle" -rs 0 -c "$script += \"angle \"; scrollField -e -tx $script $scriptField;"`;
+                        $e12 = `button -w 10 -h 10 -bgc ($syntaxText.x) ($syntaxText.y) ($syntaxText.z) -l "cross" -rs 0 -c "$script += \"cross \"; scrollField -e -tx $script $scriptField;"`;
+                        $e13 = `button -w 10 -h 10 -bgc ($syntaxText.x) ($syntaxText.y) ($syntaxText.z) -l "min" -rs 0 -c "$script += \"min \"; scrollField -e -tx $script $scriptField;"`;
+                        $e14 = `button -w 10 -h 10 -bgc ($syntaxText.x) ($syntaxText.y) ($syntaxText.z) -l "max" -rs 0 -c "$script += \"max \"; scrollField -e -tx $script $scriptField;"`;
+                        $e15 = `button -w 10 -h 10 -bgc ($syntaxText.x) ($syntaxText.y) ($syntaxText.z) -l "dot" -rs 0 -c "$script += \"dot \"; scrollField -e -tx $script $scriptField;"`;
+                        $e16 = `button -w 10 -h 10 -bgc ($syntaxText.x) ($syntaxText.y) ($syntaxText.z) -l "mag" -rs 0 -c "$script += \"mag \"; scrollField -e -tx $script $scriptField;"`;
+                        $e17 = `button -w 10 -h 10 -bgc ($syntaxText.x) ($syntaxText.y) ($syntaxText.z) -l "linstep" -rs 0 -c "$script += \"linstep \"; scrollField -e -tx $script $scriptField;"`;
+                        $e18 = `button -w 10 -h 10 -bgc ($syntaxText.x) ($syntaxText.y) ($syntaxText.z) -l "smoothstep" -rs 0 -c "$script += \"smoothstep \"; scrollField -e -tx $script $scriptField;"`;
+                        $e19 = `button -w 10 -h 10 -bgc ($syntaxText.x) ($syntaxText.y) ($syntaxText.z) -l "rot" -rs 0 -c "$script += \"rot \"; scrollField -e -tx $script $scriptField;"`;
+                        $e20 = `button -w 10 -h 10 -bgc ($syntaxText.x) ($syntaxText.y) ($syntaxText.z) -l "unit" -rs 0 -c "$script += \"unit \"; scrollField -e -tx $script $scriptField;"`;
+                        $e21 = `button -w 10 -h 10 -bgc ($syntaxText.x) ($syntaxText.y) ($syntaxText.z) -l "rand" -rs 0 -c "$script += \"rand \"; scrollField -e -tx $script $scriptField;"`;
+                        $e22 = `button -w 10 -h 10 -bgc ($syntaxText.x) ($syntaxText.y) ($syntaxText.z) -l "sphrand" -rs 0 -c "$script += \"sphrand \"; scrollField -e -tx $script $scriptField;"`;
+                        $e23 = `button -w 10 -h 10 -bgc ($syntaxText.x) ($syntaxText.y) ($syntaxText.z) -l "deg_to_rad" -rs 0 -c "$script += \"deg_to_rad \"; scrollField -e -tx $script $scriptField;"`;
+                        $e24 = `button -w 10 -h 10 -bgc ($syntaxText.x) ($syntaxText.y) ($syntaxText.z) -l "rad_to_deg" -rs 0 -c "$script += \"rad_to_deg \"; scrollField -e -tx $script $scriptField;"`;
+                        $e25 = `button -w 10 -h 10 -bgc ($syntaxText.x) ($syntaxText.y) ($syntaxText.z) -l "noise" -rs 0 -c "$script += \"noise \"; scrollField -e -tx $script $scriptField;"`;
+                        $e26 = `button -w 10 -h 10 -bgc ($syntaxText.x) ($syntaxText.y) ($syntaxText.z) -l "seed" -rs 0 -c "$script += \"seed \"; scrollField -e -tx $script $scriptField;"`;
+                        
+                        formLayout -e
+                            -attachForm $e1 "top" 7
+                            -attachForm $e1 "left" 5
+                            -attachPosition $e1 "bottom" 0 33
+                            -attachPosition $e1 "right" 0 40
+                            
+                            -attachForm $e2 "top" 7
+                            -attachControl $e2 "left" 5 $e1
+                            -attachPosition $e2 "bottom" 0 33
+                            -attachPosition $e2 "right" 0 80
+                            
+                            -attachForm $e3 "top" 7
+                            -attachControl $e3 "left" 5 $e2
+                            -attachPosition $e3 "bottom" 0 33
+                            -attachPosition $e3 "right" 0 120
+                            
+                            -attachForm $e4 "top" 7
+                            -attachControl $e4 "left" 5 $e3
+                            -attachPosition $e4 "bottom" 0 33
+                            -attachPosition $e4 "right" 0 160
+                            
+                            -attachForm $e5 "top" 7
+                            -attachControl $e5 "left" 5 $e4
+                            -attachPosition $e5 "bottom" 0 33
+                            -attachForm $e5 "right" 5
+                            
+                            -attachControl $e6 "top" 7 $e1
+                            -attachForm $e6 "left" 5
+                            -attachPosition $e6 "bottom" 0 66
+                            -attachPosition $e6 "right" 0 40
+                            
+                            -attachControl $e7 "top" 7 $e2
+                            -attachControl $e7 "left" 5 $e6
+                            -attachPosition $e7 "bottom" 0 66
+                            -attachPosition $e7 "right" 0 80
+                            
+                            -attachControl $e8 "top" 7 $e3
+                            -attachControl $e8 "left" 5 $e7
+                            -attachPosition $e8 "bottom" 0 66
+                            -attachPosition $e8 "right" 0 120
+                            
+                            -attachControl $e9 "top" 7 $e4
+                            -attachControl $e9 "left" 5 $e8
+                            -attachPosition $e9 "bottom" 0 66
+                            -attachPosition $e9 "right" 0 160
+                            
+                            -attachControl $e10 "top" 7 $e5
+                            -attachControl $e10 "left" 5 $e9
+                            -attachPosition $e10 "bottom" 0 66
+                            -attachForm $e10 "right" 5
+                            
+                            -attachControl $e11 "top" 7 $e6
+                            -attachForm $e11 "left" 5
+                            -attachPosition $e11 "bottom" 0 99
+                            -attachPosition $e11 "right" 0 50
+                            
+                            -attachControl $e12 "top" 7 $e7
+                            -attachControl $e12 "left" 5 $e11
+                            -attachPosition $e12 "bottom" 0 99
+                            -attachPosition $e12 "right" 0 100
+                            
+                            -attachControl $e13 "top" 7 $e8
+                            -attachControl $e13 "left" 5 $e12
+                            -attachPosition $e13 "bottom" 0 99
+                            -attachPosition $e13 "right" 0 150
+                            
+                            -attachControl $e14 "top" 7 $e9
+                            -attachControl $e14 "left" 5 $e13
+                            -attachPosition $e14 "bottom" 0 99
+                            -attachForm $e14 "right" 5
+                            
+                            -attachControl $e15 "top" 7 $e11
+                            -attachForm $e15 "left" 5
+                            -attachPosition $e15 "bottom" 0 132
+                            -attachPosition $e15 "right" 0 50
+                            
+                            -attachControl $e16 "top" 7 $e12
+                            -attachControl $e16 "left" 5 $e15
+                            -attachPosition $e16 "bottom" 0 132
+                            -attachPosition $e16 "right" 0 100
+                            
+                            -attachControl $e17 "top" 7 $e13
+                            -attachControl $e17 "left" 5 $e16
+                            -attachPosition $e17 "bottom" 0 132
+                            -attachPosition $e17 "right" 0 150
+                            
+                            -attachControl $e18 "top" 7 $e14
+                            -attachControl $e18 "left" 5 $e17
+                            -attachPosition $e18 "bottom" 0 132
+                            -attachForm $e18 "right" 5
+                            
+                            -attachControl $e19 "top" 7 $e15
+                            -attachForm $e19 "left" 5
+                            -attachPosition $e19 "bottom" 0 165
+                            -attachPosition $e19 "right" 0 50
+                            
+                            -attachControl $e20 "top" 7 $e16
+                            -attachControl $e20 "left" 5 $e19
+                            -attachPosition $e20 "bottom" 0 165
+                            -attachPosition $e20 "right" 0 100
+                            
+                            -attachControl $e21 "top" 7 $e17
+                            -attachControl $e21 "left" 5 $e20
+                            -attachPosition $e21 "bottom" 0 165
+                            -attachPosition $e21 "right" 0 150
+                            
+                            -attachControl $e22 "top" 7 $e18
+                            -attachControl $e22 "left" 5 $e21
+                            -attachPosition $e22 "bottom" 0 165
+                            -attachForm $e22 "right" 5
+                            
+                            -attachControl $e23 "top" 7 $e19
+                            -attachForm $e23 "left" 5
+                            -attachForm $e23 "bottom" 7
+                            -attachPosition $e23 "right" 0 50
+                            
+                            -attachControl $e24 "top" 7 $e20
+                            -attachControl $e24 "left" 5 $e19
+                            -attachForm $e24 "bottom" 7
+                            -attachPosition $e24 "right" 0 100
+                            
+                            -attachControl $e25 "top" 7 $e21
+                            -attachControl $e25 "left" 5 $e20
+                            -attachForm $e25 "bottom" 7
+                            -attachPosition $e25 "right" 0 150
+                            
+                            -attachControl $e26 "top" 7 $e22
+                            -attachControl $e26 "left" 5 $e21
+                            -attachForm $e26 "bottom" 7
+                            -attachForm $e26 "right" 5
+                            
+                        $functionsForm;
+                    setParent ..;
+                setParent ..;
+                
+                formLayout -e
+                    -attachForm $maths "top" 5
+                    -attachForm $maths "left" 5
+                    -attachPosition $maths "bottom" 0 55
+                    -attachForm $maths "right" 5
+                    
+                    -attachControl $condsLoops "top" 5 $maths
+                    -attachForm $condsLoops "left" 5
+                    -attachPosition $condsLoops "bottom" 0 110
+                    -attachPosition $condsLoops "right" 0 110
+                    
+                    -attachControl $varProc "top" 5 $maths
+                    -attachControl $varProc "left" 5 $condsLoops
+                    -attachPosition $varProc "bottom" 0 110
+                    -attachForm $varProc "right" 5
+                    
+                    -attachControl $strings "top" 5 $condsLoops
+                    -attachForm $strings "left" 5
+                    -attachPosition $strings "bottom" 0 165
+                    -attachForm $strings "right" 5
+                    
+                    -attachControl $functions "top" 5 $strings
+                    -attachForm $functions "left" 5
+                    -attachForm $functions "bottom" 5
+                    -attachForm $functions "right" 5
+                    
+                $logicTab;
+            setParent ..;
+            
+            $mayaTab = `formLayout -nd 100 "Maya Commands"`;
+                $searchCommand = `textField -h 25`;
+                $searchCommandButton = `button -bgc ($syntaxCommand.x) ($syntaxCommand.y) ($syntaxCommand.z) -l "Search Commands" -c "searchCommands($mayaCommands, $searchCommand, $commandListField)"`;
+                $commandListField = `textScrollList`;
+                $searchFlag = `textField -h 25`;
+                $searchFlagButton = `button -bgc ($syntaxCommand.x) ($syntaxCommand.y) ($syntaxCommand.z) -l "Search Flags"`;
+                $flagListField = `textScrollList`;
+                $insertCommandButton = `button -bgc ($syntaxCommand.x) ($syntaxCommand.y) ($syntaxCommand.z) -l "Insert Command"`;
+                
+                formLayout -e
+                    -attachForm $searchCommand "top" 5
+                    -attachForm $searchCommand "left" 5
+                    -attachNone $searchCommand "bottom"
+                    -attachPosition $searchCommand "right" 0 48
+                    
+                    -attachForm $searchCommandButton "top" 5
+                    -attachControl $searchCommandButton "left" 5 $searchCommand
+                    -attachNone $searchCommandButton "bottom"
+                    -attachForm $searchCommandButton "right" 5
+                    
+                    -attachControl $commandListField "top" 5 $searchCommand
+                    -attachForm $commandListField "left" 5
+                    -attachPosition $commandListField "bottom" 0 48
+                    -attachForm $commandListField "right" 5
+                    
+                    -attachControl $searchFlag "top" 5 $commandListField
+                    -attachForm $searchFlag "left" 5
+                    -attachNone $searchFlag "bottom"
+                    -attachPosition $searchFlag "right" 0 48
+                    
+                    -attachControl $searchFlagButton "top" 5 $commandListField
+                    -attachControl $searchFlagButton "left" 5 $searchFlag
+                    -attachNone $searchFlagButton "bottom"
+                    -attachForm $searchFlagButton "right" 5
+                    
+                    -attachControl $flagListField "top" 5 $searchFlag
+                    -attachForm $flagListField "left" 5
+                    -attachPosition $flagListField "bottom" 0 93
+                    -attachForm $flagListField "right" 5
+                    
+                    -attachControl $insertCommandButton "top" 5 $flagListField
+                    -attachForm $insertCommandButton "left" 5
+                    -attachForm $insertCommandButton "bottom" 5
+                    -attachForm $insertCommandButton "right" 5
+                    
+                $mayaTab;
+                
+                // For mayaCmd in mayaCommands append each to the
+                // command scroll list.
+                string $mayaCmd;
+                for ($mayaCmd in $mayaCommands)
+                {
+                    textScrollList -e -a $mayaCmd $commandListField;
+                }
+            setParent ..;
+            
+            $variablesTab = `formLayout -nd 100 "Variables"`;
+                $searchVariable = `textField -h 25`;
+                $searchVariableButton = `button -l "Search Variables"`;
+                $variableListField = `textScrollList`;
+                $insertVariableButton = `button -l "Insert Variable"`;
+                $newVariableButton = `button -l "New Variable"`;
+                
+                formLayout -e
+                    -attachForm $searchVariable "top" 5
+                    -attachForm $searchVariable "left" 5
+                    -attachNone $searchVariable "bottom"
+                    -attachPosition $searchVariable "right" 0 48
+                    
+                    -attachForm $searchVariableButton "top" 5
+                    -attachControl $searchVariableButton "left" 5 $searchVariable
+                    -attachNone $searchVariableButton "bottom"
+                    -attachForm $searchVariableButton "right" 5
+                    
+                    -attachControl $variableListField "top" 5 $searchVariable
+                    -attachForm $variableListField "left" 5
+                    -attachPosition $variableListField "bottom" 0 93
+                    -attachForm $variableListField "right" 5
+                    
+                    -attachControl $insertVariableButton "top" 5 $variableListField
+                    -attachForm $insertVariableButton "left" 5
+                    -attachForm $insertVariableButton "bottom" 5
+                    -attachPosition $insertVariableButton "right" 0 48
+                    
+                    -attachControl $newVariableButton "top" 5 $variableListField
+                    -attachControl $newVariableButton "left" 5 $insertVariableButton
+                    -attachForm $newVariableButton "bottom" 5
+                    -attachForm $newVariableButton "right" 5
+                    
+                $variablesTab;
+            setParent ..;
+
+            $proceduresTab = `formLayout -nd 100 "Procedures"`;
+                $searchProcedure = `textField -h 25`;
+                $searchProcedureButton = `button -l "Search Procedures"`;
+                $procedureListField = `textScrollList`;
+                $insertProcedureButton = `button -l "Insert Procedure"`;
+                $newProcedureButton = `button -l "New Procedure"`;
+                
+                formLayout -e
+                    -attachForm $searchProcedure "top" 5
+                    -attachForm $searchProcedure "left" 5
+                    -attachNone $searchProcedure "bottom"
+                    -attachPosition $searchProcedure "right" 0 48
+                    
+                    -attachForm $searchProcedureButton "top" 5
+                    -attachControl $searchProcedureButton "left" 5 $searchProcedure
+                    -attachNone $searchProcedureButton "bottom"
+                    -attachForm $searchProcedureButton "right" 5
+                    
+                    -attachControl $procedureListField "top" 5 $searchProcedure
+                    -attachForm $procedureListField "left" 5
+                    -attachPosition $procedureListField "bottom" 0 93
+                    -attachForm $procedureListField "right" 5
+                    
+                    -attachControl $insertProcedureButton "top" 5 $procedureListField
+                    -attachForm $insertProcedureButton "left" 5
+                    -attachForm $insertProcedureButton "bottom" 5
+                    -attachPosition $insertProcedureButton "right" 0 48
+                    
+                    -attachControl $newProcedureButton "top" 5 $procedureListField
+                    -attachControl $newProcedureButton "left" 5 $insertProcedureButton
+                    -attachForm $newProcedureButton "bottom" 5
+                    -attachForm $newProcedureButton "right" 5
+                    
+                $proceduresTab;
+            setParent ..;
+                              
+        formLayout -e
+            -attachForm $toolTab "top" 0
+            -attachForm $toolTab "left" 0
+            -attachForm $toolTab "right" 0
+            -attachForm $toolTab "bottom" 0
+        $form;
+            
+    showWindow $scriptToolWindow;
+    
+    // Script Field Window.
+    window -e -tlc 5 825 -wh 550 800 $scriptToolWindow;
+    
+    $scriptWindow = `window -t "Script Editor" -mb 1 -tlc 5 5 -wh 800 800 -ret scriptUI`;
+    
+        $fileMenu = `menu -l "File" -to 1`;
+            menuItem -l "New Script" -c "newScript($scriptField)";
+            menuItem -l "Load Script..." -c "loadScript($scriptField)";
+            menuItem -l "Save Script..." -c "saveScript($scriptField)";
+            
+        menu -l "Edit" -to 1;
+            $undo = `menuItem -l "Undo"`;
+            $redo = `menuItem -l "Redo"`;
+            menuItem -l "Edit Script" -c "editScript($scriptField, $fileMenu, $undo, $redo, $toolTab)";
+            
+        menu -l "Window" -hm 1 ;
+            $showTool = `menuItem -l "Toggle Tool Window" -c "showTool($showTool)"`;
+        
+        $scriptLayout = `formLayout -nd 100`;
+            $scriptField = `scrollField -tx $script -ed 0 scriptField`;
+            
+        formLayout -e
+                -attachForm $scriptField "top" 0
+                -attachForm $scriptField "left" 10
+                -attachForm $scriptField "bottom" 10
+                -attachForm $scriptField "right" 10
+        $scriptLayout;
+            
+    showWindow $scriptWindow;
+    window -e -tlc 5 5 -wh 800 800 $scriptWindow;
+}

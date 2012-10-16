@@ -1,0 +1,493 @@
+//////////////////////////////////////////////////////////////////////////
+///                                                                    ///
+/// SCRIPT:           kdGrassV0.1.mel - MEL Script                     ///
+///                                                                    ///
+/// AUTHOR:           Kory Dondzila - kory@korydondzila.com            ///
+///                   www.korydondzila.com                             ///
+///                                                                    ///
+/// DESCRIPTION:           Populates a mesh named ground with grass.   ///
+///                   Each grass mesh is attached to a vertex and has  ///
+///                   has a joint chain and an expression.  When the   ///
+///                   When the vertices on the mesh are changed the    ///
+///                   grass adjusts which way it faces and adjusts its ///
+///                   bend/curl.                                       ///
+///                                                                    ///
+/// USAGE:            Source script then run: grass( 1, 1 );           ///
+///                                                                    ///
+/// EDITS TO DO:          Add a conditional to limit the bends, even   ///
+///                   more, when the y normal is close to 1 or -1.     ///
+///                       Fix a few of the loops to make them more     ///
+///                   intuitive.                                       ///
+///                       Edit White space.                            ///
+///                                                                    ///
+/// THINGS TO ADD:        Menu, option for using NURBS, option for     ///
+///                   only using selected vertices, option to use a    ///
+///                   selected mesh as the grass, option to not use    ///
+///                   joints and only populate.                        ///
+///                       A system for using curves and not joints.    ///
+///                                                                    ///
+/// VERSIONS:         0.1 - Oct 12, 2011 - Initial Prototype           ///
+///                                                                    ///
+//////////////////////////////////////////////////////////////////////////
+
+////////////////////////////////////////////////////////////
+////////////////// Global Procedure: grass /////////////////
+////////////////////////////////////////////////////////////
+//                                                        //
+// Main call procedure, source the script then run this.  //
+// Include two float values for the maximum bend in the   //
+// grass and the minimum, this acts as a range for the    //
+// bend.                                                  //
+//                                                        //
+// Default: grass( 1, 1 );                                //
+// Zero ( 0 ), cannot be used for the bend minimum.       //
+//                                                        //
+// NOTE:     The UVs of the ground mesh need to be layed  //
+//       out, before running the script, this doesn't     //
+//       need to be done for the primitive meshes.        //
+//       Transforms need to be frozen to update the       //
+//       positions of the vertices, do this before        //
+//       applying any animation to the mesh.              //
+//       Animation, lighting and anything else should be  //
+//       before running this script, as it can be         //
+//       PROCESSOR HEAVY.  Depending on the number of     //
+//       vertices in the mesh.                            //
+
+global proc grass(float $bendMax, float $bendMin)
+{
+    // Sets some initial strings to be used in the
+    // procedures.
+    string $ground = "ground";
+    string $grass = "grass";
+    string $grassTexture;
+    string $grassS = "grassShader";
+    string $grassSG = ($grassS+"SG");
+    string $joints[];
+    string $grassGrps = "grass_grps";
+    
+    // Checks if bendMin is 0.
+    if ($bendMin == 0)
+    {
+        error "Minimum bend cannot equal zero, cannot divide by zero.\n";
+    }
+    
+    // Runs procedures, some return values to be used later.
+    groundCheck($ground);
+    $grassTexture = grassTexturePath();
+    createGrass($grass, $grassS, $grassSG, $grassTexture);
+    $joints = createJoints($grass);
+    populateGrass($ground, $grass, $joints, $grassGrps, $bendMax, $bendMin);
+    
+    // After everything else is done, groups the grass and
+    // ground under world and turns off inherits transform
+    // on the grass grp.
+    group -n "world" $ground $grassGrps;
+    setAttr ($grassGrps+".inheritsTransform") 0;
+}
+
+////////////////////////////////////////////////////////////
+////////////////// Procedure: groundCheck //////////////////
+////////////////////////////////////////////////////////////
+//                                                        //
+//     This procedure checks to see if a mesh named       //
+// ground exists.  If it does it freezes the              //
+// transformations, this is to update the uv.  If not     //
+// then the script errors out and asks for a mesh named   //
+// ground.                                                //
+
+proc groundCheck(string $ground)
+{
+    if (`objExists $ground`)
+    {
+        print "Ground exists.\n";
+    }else{
+        error "No ground exists.  Create a mesh named ground and try again.\n";
+    }
+}
+
+////////////////////////////////////////////////////////////
+//////////////// Procedure: grassTexturePath ///////////////
+////////////////////////////////////////////////////////////
+//                                                        //
+//     This procedures allows the user to set a texture   //
+// to be applied to the grass.                            //
+
+proc string grassTexturePath()
+{
+    print "Select a texture for the grass.\n";
+    
+    // This string is for the file filters.
+    string $filters = "All Files (*.*);;JPEG (*.jpg);;Targa (*.tga);;Tiff (*.tiff);;IFF (*.iff);;GIF (*.gif);;Bitmap (*.bmp)";
+    
+    // Queries the current set workspace/project directory path.
+    string $dir = `workspace -q -dir`;
+    
+    // Opens the file dialog box, if nothing is selected or
+    // the selection is canceled then the user is asked if
+    // he/she wants to continue without a texture, if not
+    // then the script errors out to be reran.
+    string $grassTexture[] = `fileDialog2 -ds 2 -cap "Open Texture" -dir $dir -ff $filters -sff "All Files" -fm 1`;
+    
+    string $confirm;
+    if ($grassTexture[0] == "")
+    {
+        $confirm = `confirmDialog -t "No Texture" -m "No texture was selected.  Are you sure you want to\n continue without a texture?" -ma "center" -b "Yes" -b "No" -db "Yes" -cb "No" -ds "No" -icn "question"`;
+    }
+    
+    if ($confirm == "No")
+    {
+        error "Restart the script and choose a texture.\n";
+    }
+    
+    // Returns the file path for the texture.
+    return $grassTexture[0];
+}
+
+////////////////////////////////////////////////////////////
+////////////////// Procedure: createGrass //////////////////
+////////////////////////////////////////////////////////////
+//                                                        //
+//     This procedure creates the master grass geometry   //
+// that the attached grass are copied from.  The UVs are  //
+// adjusted, a new blinn shading network is created and   //
+// it attaches the chosen texture to the grass.           //
+
+proc createGrass(string $grass, string $grassS, string $grassSG, string $grassTexture)
+{
+    // Creates the master grass mesh.
+    polyPlane -w 1 -h 8 -sx 1 -sy 8 -ax 0 0 1 -cuv 2 -ch 1 -n $grass;
+    xform -pivots 0 -4 0;
+    move -rpr 0 0 0;
+    select -r grass.e[3] grass.e[6] grass.e[9] grass.e[12] grass.e[15] grass.e[18] grass.e[21] grass.e[24] ;
+    scale -x 0.95404;
+    select -d grass.e[3] ;
+    scale -x 0.935408;
+    select -d grass.e[6] ;
+    scale -x 0.95808;
+    select -d grass.e[9] ;
+    scale -x 0.891177;
+    select -d grass.e[12] ;
+    scale -x 0.902911;
+    select -d grass.e[15] ;
+    scale -x 0.824543;
+    select -d grass.e[18] ;
+    scale -x 0.780672;
+    scale -x 0.949012;
+    select -d grass.e[21] ;
+    scale -x 0.456029;
+    polyCollapseEdge -ch 1 grass.e[24];
+    select -r grass.e[21] ;
+    scale -x 0.778965;
+    select -r grass.e[18] ;
+    scale -x 0.908768;
+    select -r grass.e[15] ;
+    scale -x 0.926951;
+    select -r grass.e[12] ;
+    scale -x 0.944705;
+    select -r grass.e[9] ;
+    scale -x 0.94611;
+    select -r grass.e[6] ;
+    scale -x 0.9656;
+    select -r grass.e[6] ;
+    scale -x 1.033333;
+    select -r grass.e[12] ;
+    scale -x 1;
+    select -cl;
+    
+    // Projects the UVs and adjusts them.
+    polyAutoProjection -lm 0 -pb 0 -ibd 1 -cm 0 -l 2 -sc 1 -o 1 -p 6 -ps 0.2 -ws 0 grass.f[0:7];
+    select -r grass.map[0:16] ;
+    setAttr "grassShape.uvPivot" -type double2 .5 0.5 ;
+    select -r grass.map[0:16] ;
+    setAttr "grassShape.uvPivot" -type double2 0.498274 0.5 ;
+    polyEditUV -u 0.435774 -v 0 ;
+    polyEditUV -pu 0.498274 -pv 0.5 -su 0.551282 -sv 1 ;
+    select -r grass.map[16] ;
+    setAttr "grassShape.uvPivot" -type double2 0.498274 0.922395 ;
+    polyEditUV -u 0 -v -0.075613 ;
+    select -r grassShape.map[14:15] ;
+    polyEditUV -pu 0.498274 -pv 0.873506 -su 0.75641 -sv 1 ;
+    
+    // Deletes 4 edges to drop the poly count to 4.
+    polyDelEdge -cv true -ch 1 grass.e[3] grass.e[9] grass.e[15] grass.e[21];
+    
+    // Creates a new blinn shader and network.
+    shadingNode -asShader blinn -n $grassS;
+    sets -renderable true -noSurfaceShader true -empty -name $grassSG;
+    connectAttr -f grassShader.outColor grassShaderSG.surfaceShader;
+    select -r $grass;
+    hyperShade -a grassShader;
+    
+    // Sets attributes for the new shader.
+    setAttr "grassShader.diffuse" 0.642;
+    setAttr "grassShader.eccentricity" 0.163;
+    setAttr "grassShader.specularRollOff" 0.276;
+    setAttr "grassShader.specularColor" -type double3 1 0.997 0.863 ;
+    
+    // Creates a file node and place2dTexture node and
+    // connects their attributes.
+    shadingNode -asTexture file -n grassFile;
+    shadingNode -asUtility place2dTexture -n grassPlace2dTexture;
+    connectAttr -f ("grassPlace2dTexture.coverage") ("grassFile.coverage");
+    connectAttr -f ("grassPlace2dTexture.translateFrame") ("grassFile.translateFrame");
+    connectAttr -f ("grassPlace2dTexture.rotateFrame") ("grassFile.rotateFrame");
+    connectAttr -f ("grassPlace2dTexture.mirrorU") ("grassFile.mirrorU");
+    connectAttr -f ("grassPlace2dTexture.mirrorV") ("grassFile.mirrorV");
+    connectAttr -f ("grassPlace2dTexture.stagger") ("grassFile.stagger");
+    connectAttr -f ("grassPlace2dTexture.wrapU") ("grassFile.wrapU");
+    connectAttr -f ("grassPlace2dTexture.wrapV") ("grassFile.wrapV");
+    connectAttr -f ("grassPlace2dTexture.repeatUV") ("grassFile.repeatUV");
+    connectAttr -f ("grassPlace2dTexture.offset") ("grassFile.offset");
+    connectAttr -f ("grassPlace2dTexture.rotateUV") ("grassFile.rotateUV");
+    connectAttr -f ("grassPlace2dTexture.noiseUV") ("grassFile.noiseUV");
+    connectAttr -f ("grassPlace2dTexture.vertexUvOne") ("grassFile.vertexUvOne");
+    connectAttr -f ("grassPlace2dTexture.vertexUvTwo") ("grassFile.vertexUvTwo");
+    connectAttr -f ("grassPlace2dTexture.vertexUvThree") ("grassFile.vertexUvThree");
+    connectAttr -f ("grassPlace2dTexture.vertexCameraOne") ("grassFile.vertexCameraOne");
+    connectAttr ("grassPlace2dTexture.outUV") ("grassFile.uv");
+    connectAttr ("grassPlace2dTexture.outUvFilterSize") ("grassFile.uvFilterSize");
+    defaultNavigation -force true -connectToExisting -source ("grassFile") -destination grassShader.color;
+    
+    // Sets the file texture to the selected image/texture.
+    setAttr grassFile.fileTextureName -typ "string" $grassTexture;
+    
+    // Freezes the transforms and deletes the history on
+    // the master grass.
+    makeIdentity -apply true -t 1 -r 1 -s 1 -n 0 $grass;
+    delete -ch grass;
+}
+
+////////////////////////////////////////////////////////////
+////////////////// Procedure: createJoints /////////////////
+////////////////////////////////////////////////////////////
+//                                                        //
+//     This procedure creates the master joints that the  //
+// master grass is then bound to.                         //
+
+proc string[] createJoints(string $grass)
+{
+    // Gets the bounding box of the master grass and
+    // positions the first joint to the minimumY and the
+    // end joint to the maximumY.
+    float $grassBox[] = `exactWorldBoundingBox $grass`;
+    string $selJnt[];
+    $selJnt[0] = `joint -p 0 $grassBox[1] 0 -n grass_1_jnt -rad 0.5`;
+    $selJnt[1] = `joint -p 0 $grassBox[4] 0 -n grass_end_jnt -rad 0.5`;
+    
+    // Gets the absolute positions of the new joints.
+    vector $sjPos = (`joint -q -p $selJnt[0]`);
+    vector $ejPos = (`joint -q -p $selJnt[1]`);
+    string $crJnt[];
+    
+    // Clears the selection and sets $seg to 4.
+    select -cl;
+    int $seg=4;
+    
+    // For loop creates joints in the proper position
+    // and assigns them to an array and parents the first
+    // created joint to the start joint and parents the
+    // end joint to the last created joint.
+    for ($i=$seg; $i>1; $i--)
+    {
+        // This gets the value to use in the $crJnt array.
+        // Then creates a new joint based on the positions
+        // of the start and end joint and which segment joint
+        // is being created.
+        int $x = abs ($i-$seg);
+        $crJnt[$x] = `joint -p ((((($sjPos.x)-($ejPos.x))/$seg)*($i-1))+($ejPos.x)) ((((($sjPos.y)-($ejPos.y))/$seg)*($i-1))+($ejPos.y)) ((((($sjPos.z)-($ejPos.z))/$seg)*($i-1))+($ejPos.z)) -n ("grass_"+($x+2)+"_jnt") -rad 0.5`;
+        
+        // Conditional checks if first segment joint is
+        // being created and if true it is parented to
+        // the start joint.  Then checks if the last
+        // segment joint is being created and if true
+        // the end joint gets parented to the last segment
+        // joint.
+        if ($x==0)
+        {
+            parent $crJnt[$x] $selJnt[0];
+        }else if (($x+1)==($seg-1)) {
+            parent $selJnt[1] $crJnt[$x];
+        }
+    }
+    
+    // Orients the joints to XYZ with the secondary axis
+    // pointing in -z.
+    joint -e -oj xyz -secondaryAxisOrient zdown -ch -zso $selJnt[0];
+    
+    // Binds the master grass mesh to the master joints.
+    bindSkin -tsb $selJnt[0] $crJnt[0] $crJnt[1] $crJnt[2] $grass;
+    
+    // Puts the master start joint and the first 3 segment
+    // joints into an array then returns the array.
+    string $joints[] = {$selJnt[0], $crJnt[0], $crJnt[1], $crJnt[2]};
+    return $joints;
+}
+
+////////////////////////////////////////////////////////////
+///////////////// Procedure: populateGrass /////////////////
+////////////////////////////////////////////////////////////
+//                                                        //
+//     This procedure moves the master grass to a vertex  //
+// on the ground mesh and bends it based on the inputed   //
+// bendMax, bendMin and the y normal of the vertex.       //
+// the master grass, mesh and joints, are duplicated      //
+// and the duplicated mesh is bound to the duplicated     //
+// joints.  The new start joint is then normalConstrained //
+// to the ground mesh.  A transform node is created and   //
+// pointOnPolyConstrained to the ground mesh, the new     //
+// joint chain is then parented to the transform node.    //
+// The transform node and the grass mesh are then grouped //
+// together and that group is parented to a main group    //
+// for all grass groups.  An expression is then created   //
+// for the grass joints so that their bend is updated     //
+// when the normal of the ground vertex is changed.       //
+// This is done for all vertices on the ground mesh.      //
+
+proc populateGrass(string $ground, string $grass, string $joints[], string $grassGrps, float $bendMax, float $bendMin)
+{
+    // Bend min is inversed so that a smaller given number
+    // brings the minimum bend closer to zero.
+    $bendMin = 1/$bendMin;
+    
+    // Creates a closestPointOnMesh node and the outMesh
+    // attr from the ground is connected to the inMesh
+    // and the translate of the master start joint is
+    // connected to the inPosition.
+    string $cpom = `createNode closestPointOnMesh -ss`;
+    connectAttr ($ground+"Shape.outMesh") ($cpom+".inMesh");
+    connectAttr ($joints[0]+".translate") ($cpom+".inPosition");
+    
+    // Selects all vertices of the ground mesh and puts
+    // them into an array, then gets teh size of that array.
+    // The selection is cleared.
+    select -r "ground.vtx[*]";
+    string $groundVtx[] = `ls -sl -fl`;
+    float $groundSize = size($groundVtx);
+    select -cl;
+    
+    // A group is created, this is for all the grass groups.
+    group -n $grassGrps -em;
+    
+    string $grassJnt[];
+    
+    // This Loops does what is specified in the procedure
+    // description.  It loops for all vertices in the
+    // ground mesh.
+    for ($s=0; $s<$groundSize; $s++)
+    {
+        // Queries the normals of the current vertex.
+        float $vtxNorm[] = `polyNormalPerVertex -q -xyz $groundVtx[$s]`;
+        
+        // If the vertex is between -0.5 and 0.5 it sets
+        // is to -.5 or 0.5 respectively.  This prevents
+        // the grass from bending in on itself, but that
+        // can be changed if the bendMax is changed.
+        if (($vtxNorm[1]<0.5)&&($vtxNorm[1]>(-0.5)))
+        {
+            if ($vtxNorm[1]<0)
+            {
+            $vtxNorm[1] = -0.5;
+            }else{
+            $vtxNorm[1] = 0.5;
+            }
+        }
+        
+        // This sets the randMin and randMax that the
+        // master joints use to randomize their rotations.
+        float $randMin = (-10*$bendMax)*(pow((1/$vtxNorm[1]),2));
+        float $randMax = $randMin/(3*$bendMin);
+        
+        // This randomly rotates the three master segment
+        // joints.  To also rotate the start joint change
+        // $i=1 to $i=0.
+        for ($i=1; $i<4; $i++)
+        {
+            setAttr ($joints[$i]+".rz") (rand($randMin,$randMax));
+        }
+        
+        // This queries the absolute translation of the 
+        // current vertex and moves the master grass to
+        // that point.
+        float $posVtx[] = `xform -q -t $groundVtx[$s]`;
+        setAttr ($joints[0]+".translate") $posVtx[0] $posVtx[1] $posVtx[2];
+        
+        // The master grass mesh and joints are duplicated
+        // and the dupicate segment joints are put into an
+        // array.  This array is used in the creation of
+        // the expression.
+        string $newGrass[] = `duplicate -rc $grass $joints[0]`;
+        for ($i=0; $i<3; $i++)
+        {
+            $grassJnt[(($s*3)+$i)] = $newGrass[(2+$i)];
+        }
+        
+        // The new mesh is bound to the new joints, the new
+        // start joint is normalConstrained to the ground
+        // mesh and its pivot is set.
+        bindSkin -tsb $newGrass[1] $newGrass[2] $newGrass[3] $newGrass[4] $newGrass[0];
+        string $normConst[] = `normalConstraint $ground $newGrass[1]`;
+        xform -piv $posVtx[0] $posVtx[1] $posVtx[2] $newGrass[1];
+        
+        // An empty node is created and moved to the current
+        // vertex, its transforms are then frozen.
+        string $null = `group -em -n ($newGrass[1]+"_grp")`;
+        setAttr ($null+".translate") $posVtx[0] $posVtx[1] $posVtx[2];
+        makeIdentity -a 1 -t 1 -r 1 -s 1 $null;
+        
+        // The empty node is pointOnPolyConstrained to the ground
+        // mesh and the constraint's U and V parameter are set
+        // to the current vertex, this information is received from
+        // the closestPointOnMesh node.  The new grass start joint
+        // is parented to the empty node.
+        string $popc[] = `pointOnPolyConstraint $ground $null`;
+        float $pU = `getAttr ($cpom+".parameterU")`;
+        float $pV = `getAttr ($cpom+".parameterV")`;
+        setAttr ($popc[0]+".groundU0") $pU;
+        setAttr ($popc[0]+".groundV0") $pV;
+        parent $newGrass[1] $null;
+        
+        // Groups the new grass mesh and transform node, with
+        // the joints, together, then parents this group node
+        // to the grass groups node.  This it to organize the
+        // outliner.
+        string $grassGroup = `group -n ($newGrass[0]+"_grp") $newGrass[0] $null`;
+        parent $grassGroup $grassGrps;
+        
+        // Expression is created to control the bend in the grass
+        // when the y normal of the vertex, the new grass is on,
+        // is changed.  This expression is almost the same that
+        // was used earlier in the script to set the initial
+        // bends.
+        expression -n ("grass"+($s+1)+"_expr") -s
+            (
+            "float $vtxNorm[] = `polyNormalPerVertex -q -xyz "+$groundVtx[$s]+"`;\n"+
+            "float $vtxNormPast;\n"+
+            "float $yNorm;\n\n"+
+            
+            "if ($vtxNorm[1] != $vtxNormPast)\n"+
+            "{\n"+
+            "$yNorm = $vtxNorm[1];\n"+
+            "    if (($yNorm<0.5)&&($yNorm>(-0.5)))\n"+
+            "    {\n"+
+            "        if ($yNorm<0)\n"+
+            "        {\n"+
+            "            $yNorm = -0.5;\n"+
+            "        }else{\n"+
+            "            $yNorm = 0.5;\n"+
+            "        }\n"+
+            "    }\n"+
+            "    float $randMin = (-10*"+$bendMax+")*(pow((1/$yNorm),2));\n"+
+            "    float $randMax = $randMin/(3*"+$bendMin+");\n\n"+
+            
+            "    "+$grassJnt[($s*3)]+".rz = (rand($randMin,$randMax));\n"+
+            "    "+$grassJnt[(($s*3)+1)]+".rz = (rand($randMin,$randMax));\n"+
+            "    "+$grassJnt[(($s*3)+2)]+".rz = (rand($randMin,$randMax));\n"+
+            "}\n\n"+
+            
+            "$vtxNormPast = $vtxNorm[1];");
+    }
+    
+    // After all new grass is created the master grass, joints and
+    // closestPointOnMesh node are deleted.
+    delete $grass $joints[0] $cpom;
+}

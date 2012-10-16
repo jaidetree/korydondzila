@@ -1,0 +1,92 @@
+.main
+  :background #171b1c
+.contact-info, .ui-nav li
+
+.main
+  :width 580px
+  :height 580px
+  :margin-right 20px
+  @include inline()
+  .content
+    :padding 20px
+    :overflow auto
+    :height 540px
+    :position relative
+
+.ui
+  @include inline()
+  :vertical-align top
+
+.contact-info
+  :margin-bottom 24px
+  .contact
+    :width 348px
+    :height 348px
+  .profile
+    float: left
+    :margin 20px
+    :width 100px
+    :height auto
+
+.resume
+  :padding-top 20px
+  a
+    :clear both
+    :display block
+    :height 83px
+    :padding-left 100px
+    :background url(../images/download.png) no-repeat
+    :line-height 83px
+    :margin-left 20px
+    :margin-top 20px
+
+.ui
+  ul
+    li
+      :width 112px
+      :position relative
+      &:hover 
+        :cursor pointer
+        a
+          :color #9d1e00
+    .works
+      :width 210px
+      :height 210px
+      :float right
+      a
+        :line-height 210px
+    .reel 
+      :height 73px
+      :margin-bottom 24px
+      a
+        :line-height 73px
+    .about
+      :width 112px
+      :height 112px
+      a
+        :line-height 112px
+    a
+      :display block
+      :position absolute
+      :left 0
+      :top 0
+      :bottom 0
+      :right 0
+      :vertical-align middle
+
+.about
+  :font-size 14px
+  p
+    :margin 10px 0
+
+.works-container
+  :display none
+
+.works-list
+  li
+    :background url(../images/mel_icon.png) no-repeat center left
+    :padding-left 70px
+    :height 80px
+    :margin-bottom 20px
+    p
+      :margin 10px 0
