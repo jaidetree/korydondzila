@@ -1,0 +1,38 @@
+.container
+  +container
+  width: 80%
+  margin: 0 auto
+
+.intro
+  h1
+    font-family: fjalla
+    font-size: 10.5em
+    color: #e6e6e6
+    text-transform: uppercase
+    text-align: center
+    margin-bottom: 1em
+    .name
+      color: $main-accent
+      display: block
+      font-size: 0.6em
+      font-family: yellowtail
+      text-transform: capitalize
+      line-height: 1.5em
+.who
+  +span-columns(6)
+  h2
+    color: $main-accent
+    display: block
+    font-size: 4em
+    font-family: fjalla
+    text-align: center
+    line-height: 1.5em
+  .and
+    color: #fff
+    font-family: yellowtail
+    font-size: 2.5em
+    display: block
+    text-align: center
+    margin-bottom: 1em
+.reel
+  +span-columns(6 omega)

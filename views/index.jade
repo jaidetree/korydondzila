@@ -1,5 +1,12 @@
 extends layout
 
 block content
-  h1= title
-  p Welcome to #{title}
+    .container
+        section.intro
+            h1 Greetings!
+                span.name I&rsquo;m Kory Dondzila
+        section.who
+            span.and &amp; I do
+            h2 Technical Design &amp; Development
+        section.reel
+            iframe(src="//player.vimeo.com/video/42804566", width="461", height="259", frameborder="0", webkitallowfullscreen, mozallowfullscreen, allowfullscreen)

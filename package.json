@@ -13,13 +13,9 @@
     "node": ">= 0.10.0"
   },
   "devDependencies": {
-    "grunt": "~0.4.2",
-    "grunt-contrib-jshint": "~0.7.2",
-    "grunt-contrib-watch": "~0.5.3",
-    "grunt-contrib-concat": "~0.3.0",
-    "grunt-contrib-uglify": "~0.2.7",
-    "grunt-shell": "*",
-    "grunt-nodemon": "*",
-    "grunt-contrib-compass": "~0.7.0"
+    "gulp": "~3.5.2",
+    "gulp-compass": "~1.1.1",
+    "gulp-livereload": "~1.0.1",
+    "gulp-nodemon": "~0.1.2"
   }
 }

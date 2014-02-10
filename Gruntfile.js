@@ -91,11 +91,11 @@ module.exports = function(grunt) {
                 tasks: ['jshint:lib_test', 'nodeunit']
             },
             sass: {
-                files: ['*.scss', '*.sass'],
+                files: ['**/*.scss', '**/*.sass'],
                 tasks: ['compass']
             },
             public: {
-                files: ['*.js', '*.html', '*.jade', '*.css'],
+                files: ['**/*.js', '**/*.html', '**/*.jade', '**/*.css'],
                 options: {
                     livereload: true
                 }

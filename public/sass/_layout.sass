@@ -1,0 +1,43 @@
+#l-header
+  border-top: 4px solid $main-accent
+  background: $dark-accent
+  color: #fff
+  font-family: fjalla
+  position: fixed
+  top: 0
+  left: 0
+  right: 0
+  a
+    color: $light-accent
+    text-decoration: none
+    text-transform: uppercase
+    &:hover
+      color: $main-accent
+  ul
+    text-align: center
+    margin-left: 4%
+  li
+    +inline-block
+    font-size: 2em
+    padding: 0.5em 0.5em
+  #logo
+    background: url(/images/kory_dondzila_logo.png) no-repeat 50% 50%
+    text-indent: -999px
+    overflow: hidden
+    position: absolute
+    top: 0
+    left: 50%
+    margin-left: -85px
+    height: 168px
+    width: 170px
+  .split
+    width: 180px
+  li.resume a
+    color: $ui-accent
+  &.compact
+    #logo
+      background: url(/images/kory_dondzila_logo_compact.png) no-repeat 50% 50%
+      margin-top: 7px
+      width: 196px
+      height: 50px
+      margin-left: -90px
