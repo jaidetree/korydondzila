@@ -3,6 +3,8 @@
   width: 80%
   margin: 0 auto
 
+#reel
+  padding-bottom: 8em
 .intro
   h1
     font-family: fjalla
@@ -36,3 +38,67 @@
     margin-bottom: 1em
 .reel
   +span-columns(6 omega)
+#featured-project
+  background: $secondary
+  text-align: center
+  position: relative
+  .container
+    padding: 4em 0
+  .content
+    +span-columns(12)
+  .ui
+    .nav
+      width: 59px
+      height: 78px
+      position: absolute
+      top: 50%
+      margin-top: -35px
+      border: none
+      opacity: 0.4
+      &:hover
+        opacity: 1.0
+    .prev
+      left: 80px
+      background: url(/images/nav_left.png) no-repeat 50% 50%
+    .next
+      right: 80px
+      background: url(/images/nav_right.png) no-repeat 50% 50%
+.featured-project-list
+  width: 100%
+  font-size: 0
+  white-space: nowrap
+  overflow: hidden
+.featured-project
+  width: 100%
+  background: #000
+  +inline-block
+  position: relative
+  +transition(margin-left 250ms ease-in-out)
+  img
+    width: 100%
+    height: auto
+    max-height: 500px
+  .description
+    border-top: 3px solid $ui-accent
+    background: rgba(0,0,0,0.4)
+    font-size: 14px
+    position: absolute
+    bottom: 0
+    left: 0
+    right: 0
+    overflow: hidden
+    height: 0
+    +transition(250ms height ease-in-out)
+    h2
+      margin-bottom: 20px 
+    p
+      font-size: 16px
+      line-height: 1.2em
+    .inner
+      +box-sizing(border-box)
+      padding: 20px
+      overflow: hidden
+    &:hover
+      +transition(250ms height ease-in-out)
+      height: 50%
+

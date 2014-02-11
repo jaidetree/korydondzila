@@ -84,6 +84,35 @@ p {
   font-family: Georgia, "Times New Roman", sans-serif;
   color: white; }
 
+/* line 25, ../sass/_base.sass */
+h1, h2, h3, h4, h5, h6 {
+  font-family: fjalla;
+  text-transform: uppercase; }
+
+/* line 28, ../sass/_base.sass */
+h1 {
+  font-size: 3.5em; }
+
+/* line 30, ../sass/_base.sass */
+h2 {
+  font-size: 3em; }
+
+/* line 32, ../sass/_base.sass */
+h3 {
+  font-size: 2.5em; }
+
+/* line 34, ../sass/_base.sass */
+h4 {
+  font-size: 2em; }
+
+/* line 36, ../sass/_base.sass */
+h5 {
+  font-size: 1.5em; }
+
+/* line 38, ../sass/_base.sass */
+h6 {
+  font-size: 1em; }
+
 /* line 1, ../sass/_layout.sass */
 #l-header {
   border-top: 4px solid #d7cfbc;
@@ -93,20 +122,21 @@ p {
   position: fixed;
   top: 0;
   left: 0;
-  right: 0; }
-  /* line 10, ../sass/_layout.sass */
+  right: 0;
+  z-index: 800; }
+  /* line 11, ../sass/_layout.sass */
   #l-header a {
     color: #424e65;
     text-decoration: none;
     text-transform: uppercase; }
-    /* line 14, ../sass/_layout.sass */
+    /* line 15, ../sass/_layout.sass */
     #l-header a:hover {
       color: #d7cfbc; }
-  /* line 16, ../sass/_layout.sass */
+  /* line 17, ../sass/_layout.sass */
   #l-header ul {
     text-align: center;
     margin-left: 4%; }
-  /* line 19, ../sass/_layout.sass */
+  /* line 20, ../sass/_layout.sass */
   #l-header li {
     display: -moz-inline-stack;
     display: inline-block;
@@ -116,7 +146,7 @@ p {
     *display: inline;
     font-size: 2em;
     padding: 0.5em 0.5em; }
-  /* line 23, ../sass/_layout.sass */
+  /* line 24, ../sass/_layout.sass */
   #l-header #logo {
     background: url(/images/kory_dondzila_logo.png) no-repeat 50% 50%;
     text-indent: -999px;
@@ -127,13 +157,13 @@ p {
     margin-left: -85px;
     height: 168px;
     width: 170px; }
-  /* line 33, ../sass/_layout.sass */
+  /* line 34, ../sass/_layout.sass */
   #l-header .split {
     width: 180px; }
-  /* line 35, ../sass/_layout.sass */
+  /* line 36, ../sass/_layout.sass */
   #l-header li.resume a {
     color: #c30000; }
-  /* line 38, ../sass/_layout.sass */
+  /* line 39, ../sass/_layout.sass */
   #l-header.compact #logo {
     background: url(/images/kory_dondzila_logo_compact.png) no-repeat 50% 50%;
     margin-top: 7px;
@@ -158,7 +188,11 @@ p {
     display: table;
     clear: both; }
 
-/* line 7, ../sass/_modules.sass */
+/* line 6, ../sass/_modules.sass */
+#reel {
+  padding-bottom: 8em; }
+
+/* line 9, ../sass/_modules.sass */
 .intro h1 {
   font-family: fjalla;
   font-size: 10.5em;
@@ -166,7 +200,7 @@ p {
   text-transform: uppercase;
   text-align: center;
   margin-bottom: 1em; }
-  /* line 14, ../sass/_modules.sass */
+  /* line 16, ../sass/_modules.sass */
   .intro h1 .name {
     color: #d7cfbc;
     display: block;
@@ -175,13 +209,13 @@ p {
     text-transform: capitalize;
     line-height: 1.5em; }
 
-/* line 21, ../sass/_modules.sass */
+/* line 23, ../sass/_modules.sass */
 .who {
   width: 49.15254%;
   float: left;
   margin-right: 1.69492%;
   display: inline; }
-  /* line 23, ../sass/_modules.sass */
+  /* line 25, ../sass/_modules.sass */
   .who h2 {
     color: #d7cfbc;
     display: block;
@@ -189,7 +223,7 @@ p {
     font-family: fjalla;
     text-align: center;
     line-height: 1.5em; }
-  /* line 30, ../sass/_modules.sass */
+  /* line 32, ../sass/_modules.sass */
   .who .and {
     color: white;
     font-family: yellowtail;
@@ -198,10 +232,109 @@ p {
     text-align: center;
     margin-bottom: 1em; }
 
-/* line 37, ../sass/_modules.sass */
+/* line 39, ../sass/_modules.sass */
 .reel {
   width: 49.15254%;
   float: right;
   margin-right: 0;
   *margin-left: -1em;
   display: inline; }
+
+/* line 41, ../sass/_modules.sass */
+#featured-project {
+  background: #2b3547;
+  text-align: center;
+  position: relative; }
+  /* line 45, ../sass/_modules.sass */
+  #featured-project .container {
+    padding: 4em 0; }
+  /* line 47, ../sass/_modules.sass */
+  #featured-project .content {
+    width: 100%;
+    float: left;
+    margin-right: 1.69492%;
+    display: inline; }
+  /* line 50, ../sass/_modules.sass */
+  #featured-project .ui .nav {
+    width: 59px;
+    height: 78px;
+    position: absolute;
+    top: 50%;
+    margin-top: -35px;
+    border: none;
+    opacity: 0.4; }
+    /* line 58, ../sass/_modules.sass */
+    #featured-project .ui .nav:hover {
+      opacity: 1; }
+  /* line 60, ../sass/_modules.sass */
+  #featured-project .ui .prev {
+    left: 80px;
+    background: url(/images/nav_left.png) no-repeat 50% 50%; }
+  /* line 63, ../sass/_modules.sass */
+  #featured-project .ui .next {
+    right: 80px;
+    background: url(/images/nav_right.png) no-repeat 50% 50%; }
+
+/* line 66, ../sass/_modules.sass */
+.featured-project-list {
+  width: 100%;
+  font-size: 0;
+  white-space: nowrap;
+  overflow: hidden; }
+
+/* line 71, ../sass/_modules.sass */
+.featured-project {
+  width: 100%;
+  background: black;
+  display: -moz-inline-stack;
+  display: inline-block;
+  vertical-align: middle;
+  *vertical-align: auto;
+  zoom: 1;
+  *display: inline;
+  position: relative;
+  -webkit-transition: margin-left 250ms ease-in-out;
+  -moz-transition: margin-left 250ms ease-in-out;
+  -o-transition: margin-left 250ms ease-in-out;
+  transition: margin-left 250ms ease-in-out; }
+  /* line 77, ../sass/_modules.sass */
+  .featured-project img {
+    width: 100%;
+    height: auto;
+    max-height: 500px; }
+  /* line 81, ../sass/_modules.sass */
+  .featured-project .description {
+    border-top: 3px solid #c30000;
+    background: rgba(0, 0, 0, 0.4);
+    font-size: 14px;
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    overflow: hidden;
+    height: 0;
+    -webkit-transition: 250ms height ease-in-out;
+    -moz-transition: 250ms height ease-in-out;
+    -o-transition: 250ms height ease-in-out;
+    transition: 250ms height ease-in-out; }
+    /* line 92, ../sass/_modules.sass */
+    .featured-project .description h2 {
+      margin-bottom: 20px; }
+    /* line 94, ../sass/_modules.sass */
+    .featured-project .description p {
+      font-size: 16px;
+      line-height: 1.2em; }
+    /* line 97, ../sass/_modules.sass */
+    .featured-project .description .inner {
+      -webkit-box-sizing: border-box;
+      -moz-box-sizing: border-box;
+      box-sizing: border-box;
+      padding: 20px;
+      overflow: hidden; }
+    /* line 101, ../sass/_modules.sass */
+    .featured-project .description:hover {
+      -webkit-transition: 250ms height ease-in-out;
+      -moz-transition: 250ms height ease-in-out;
+      -o-transition: 250ms height ease-in-out;
+      transition: 250ms height ease-in-out;
+      height: 50%; }

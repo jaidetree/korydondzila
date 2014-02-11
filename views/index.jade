@@ -1,12 +1,41 @@
 extends layout
 
 block content
-    .container
-        section.intro
-            h1 Greetings!
-                span.name I&rsquo;m Kory Dondzila
-        section.who
-            span.and &amp; I do
-            h2 Technical Design &amp; Development
-        section.reel
-            iframe(src="//player.vimeo.com/video/42804566", width="461", height="259", frameborder="0", webkitallowfullscreen, mozallowfullscreen, allowfullscreen)
+    #reel
+        .container
+            section.intro
+                h1 Greetings!
+                    span.name I&rsquo;m Kory Dondzila
+            section.who
+                span.and &amp; I do
+                h2 Technical Design &amp; Development
+            section.reel
+                iframe(src="//player.vimeo.com/video/42804566", width="461", height="259", frameborder="0", webkitallowfullscreen, mozallowfullscreen, allowfullscreen)
+
+    section#featured-project
+        .container
+            .content
+                h2 Featured Project
+                div.featured-projects
+                    .ui
+                        button.nav.prev
+                        button.nav.next
+                    ul.featured-project-list
+                        li.featured-project
+                            img(alt="Featured Project", src="#")
+                            .description
+                                .inner
+                                    h3 Project Name
+                                    p This is the project description. It's decidedly not very long but it could easily be longer.
+                        li.featured-project
+                            img(alt="Featured Project", src="#")
+                            .description
+                                .inner
+                                    h3 Project Name
+                                    p This is the project description. It's decidedly not very long but it could easily be longer.
+                        li.featured-project
+                            img(alt="Featured Project", src="#")
+                            .description
+                                .inner
+                                    h3 Project Name
+                                    p This is the project description. It's decidedly not very long but it could easily be longer.

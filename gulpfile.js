@@ -6,7 +6,7 @@ var gulp = require('gulp'),
 
 var paths = {
     compass: ['public/**/*.s[ca]ss'],
-    assets: ['public/**/*.js'],
+    assets: ['public/**/*.js', 'public/**/*.css'],
     templates: ['views/**/*.jade'],
     src: ['**/*.js']
 };
@@ -20,8 +20,7 @@ gulp.task('compass', function () {
         image: 'images',
         javascript: 'js',
         require: ['susy']
-    }))
-    .pipe(livereload());
+    }));
 });
 
 gulp.task('assets', function () {
