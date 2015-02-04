@@ -246,15 +246,18 @@ h6 {
   text-align: center;
   position: relative; }
   /* line 45, ../sass/_modules.sass */
+  #featured-project h2 {
+    margin-bottom: 1em; }
+  /* line 47, ../sass/_modules.sass */
   #featured-project .container {
     padding: 4em 0; }
-  /* line 47, ../sass/_modules.sass */
+  /* line 49, ../sass/_modules.sass */
   #featured-project .content {
     width: 100%;
     float: left;
     margin-right: 1.69492%;
     display: inline; }
-  /* line 50, ../sass/_modules.sass */
+  /* line 52, ../sass/_modules.sass */
   #featured-project .ui .nav {
     width: 59px;
     height: 78px;
@@ -263,26 +266,26 @@ h6 {
     margin-top: -35px;
     border: none;
     opacity: 0.4; }
-    /* line 58, ../sass/_modules.sass */
+    /* line 60, ../sass/_modules.sass */
     #featured-project .ui .nav:hover {
       opacity: 1; }
-  /* line 60, ../sass/_modules.sass */
+  /* line 62, ../sass/_modules.sass */
   #featured-project .ui .prev {
     left: 80px;
     background: url(/images/nav_left.png) no-repeat 50% 50%; }
-  /* line 63, ../sass/_modules.sass */
+  /* line 65, ../sass/_modules.sass */
   #featured-project .ui .next {
     right: 80px;
     background: url(/images/nav_right.png) no-repeat 50% 50%; }
 
-/* line 66, ../sass/_modules.sass */
+/* line 68, ../sass/_modules.sass */
 .featured-project-list {
   width: 100%;
   font-size: 0;
   white-space: nowrap;
   overflow: hidden; }
 
-/* line 71, ../sass/_modules.sass */
+/* line 73, ../sass/_modules.sass */
 .featured-project {
   width: 100%;
   background: black;
@@ -297,12 +300,12 @@ h6 {
   -moz-transition: margin-left 250ms ease-in-out;
   -o-transition: margin-left 250ms ease-in-out;
   transition: margin-left 250ms ease-in-out; }
-  /* line 77, ../sass/_modules.sass */
+  /* line 79, ../sass/_modules.sass */
   .featured-project img {
     width: 100%;
     height: auto;
     max-height: 500px; }
-  /* line 81, ../sass/_modules.sass */
+  /* line 83, ../sass/_modules.sass */
   .featured-project .description {
     border-top: 3px solid #c30000;
     background: rgba(0, 0, 0, 0.4);
@@ -317,24 +320,192 @@ h6 {
     -moz-transition: 250ms height ease-in-out;
     -o-transition: 250ms height ease-in-out;
     transition: 250ms height ease-in-out; }
-    /* line 92, ../sass/_modules.sass */
+    /* line 94, ../sass/_modules.sass */
     .featured-project .description h2 {
       margin-bottom: 20px; }
-    /* line 94, ../sass/_modules.sass */
+    /* line 96, ../sass/_modules.sass */
     .featured-project .description p {
       font-size: 16px;
       line-height: 1.2em; }
-    /* line 97, ../sass/_modules.sass */
+    /* line 99, ../sass/_modules.sass */
     .featured-project .description .inner {
       -webkit-box-sizing: border-box;
       -moz-box-sizing: border-box;
       box-sizing: border-box;
       padding: 20px;
       overflow: hidden; }
-    /* line 101, ../sass/_modules.sass */
-    .featured-project .description:hover {
-      -webkit-transition: 250ms height ease-in-out;
-      -moz-transition: 250ms height ease-in-out;
-      -o-transition: 250ms height ease-in-out;
-      transition: 250ms height ease-in-out;
-      height: 50%; }
+  /* line 104, ../sass/_modules.sass */
+  .featured-project:hover .description, .featured-project .active .description {
+    -webkit-transition: 250ms height ease-in-out;
+    -moz-transition: 250ms height ease-in-out;
+    -o-transition: 250ms height ease-in-out;
+    transition: 250ms height ease-in-out;
+    height: 50%; }
+
+/* line 108, ../sass/_modules.sass */
+#works > .container {
+  padding: 4em 0; }
+/* line 110, ../sass/_modules.sass */
+#works h2 {
+  text-align: center;
+  color: #424e65;
+  margin-bottom: 1em; }
+
+/* line 114, ../sass/_modules.sass */
+.works-ui {
+  border-top: 4px solid #424e65;
+  background: #2b3547;
+  margin-bottom: 2em; }
+  /* line 118, ../sass/_modules.sass */
+  .works-ui li {
+    display: -moz-inline-stack;
+    display: inline-block;
+    vertical-align: middle;
+    *vertical-align: auto;
+    zoom: 1;
+    *display: inline; }
+    /* line 120, ../sass/_modules.sass */
+    .works-ui li a {
+      display: block;
+      padding: 1em;
+      width: 5em;
+      text-align: center;
+      color: white;
+      text-decoration: none; }
+      /* line 127, ../sass/_modules.sass */
+      .works-ui li a:hover {
+        text-decoration: underline;
+        background: #c30000; }
+  /* line 131, ../sass/_modules.sass */
+  .works-ui .active a {
+    background: #424e65;
+    position: relative; }
+    /* line 134, ../sass/_modules.sass */
+    .works-ui .active a:hover {
+      background: #424e65; }
+    /* line 136, ../sass/_modules.sass */
+    .works-ui .active a:after {
+      content: "";
+      display: block;
+      width: 0;
+      height: 0;
+      border-left: 3.5em solid transparent;
+      border-right: 3.5em solid transparent;
+      border-top: 1em solid #424e65;
+      position: absolute;
+      top: 100%;
+      left: 0; }
+  /* line 147, ../sass/_modules.sass */
+  .works-ui .container {
+    width: auto; }
+  /* line 149, ../sass/_modules.sass */
+  .works-ui.fixed {
+    position: fixed;
+    top: 68px;
+    left: 0;
+    right: 0;
+    -webkit-box-shadow: rgba(0, 0, 0, 0.4) 0 4px 0 0;
+    -moz-box-shadow: rgba(0, 0, 0, 0.4) 0 4px 0 0;
+    box-shadow: rgba(0, 0, 0, 0.4) 0 4px 0 0; }
+
+/* line 155, ../sass/_modules.sass */
+.works-list {
+  margin-top: 4em; }
+
+/* line 157, ../sass/_modules.sass */
+.work {
+  width: 32.20339%;
+  float: left;
+  margin-right: 1.69492%;
+  display: inline;
+  margin-right: -100%;
+  margin-bottom: 1em; }
+  /* line 42, ../../../../../../../.rbenv/versions/2.0.0-p0/lib/ruby/gems/2.0.0/gems/susy-1.0.9/sass/susy/_isolation.scss */
+  .work:nth-child(3n + 1) {
+    margin-left: 0%;
+    clear: left; }
+  /* line 42, ../../../../../../../.rbenv/versions/2.0.0-p0/lib/ruby/gems/2.0.0/gems/susy-1.0.9/sass/susy/_isolation.scss */
+  .work:nth-child(3n + 2) {
+    margin-left: 33.89831%;
+    clear: none; }
+  /* line 42, ../../../../../../../.rbenv/versions/2.0.0-p0/lib/ruby/gems/2.0.0/gems/susy-1.0.9/sass/susy/_isolation.scss */
+  .work:nth-child(3n + 3) {
+    margin-left: 67.79661%;
+    clear: none; }
+  /* line 160, ../sass/_modules.sass */
+  .work .thumbnail {
+    background: #424e65;
+    min-height: 10em; }
+  /* line 163, ../sass/_modules.sass */
+  .work .inner {
+    padding: 1em;
+    background: #2b3547;
+    min-height: 13em; }
+    /* line 167, ../sass/_modules.sass */
+    .work .inner h3 {
+      font-size: 1.5em;
+      color: #d7cfbc; }
+    /* line 170, ../sass/_modules.sass */
+    .work .inner p {
+      line-height: 1.8em;
+      font-size: 0.9em;
+      margin-top: 0.5em; }
+
+/* line 175, ../sass/_modules.sass */
+#contact .header {
+  background: #d7cfbc;
+  padding: 2em 0;
+  text-align: center;
+  font-size: 1.4em; }
+  /* line 180, ../sass/_modules.sass */
+  #contact .header h2 {
+    color: #232d37; }
+  /* line 182, ../sass/_modules.sass */
+  #contact .header h3 {
+    color: #232d37;
+    font-family: yellowtail;
+    text-transform: none; }
+/* line 186, ../sass/_modules.sass */
+#contact .contact-options {
+  margin: 3em 0;
+  text-align: center; }
+  /* line 189, ../sass/_modules.sass */
+  #contact .contact-options li {
+    display: -moz-inline-stack;
+    display: inline-block;
+    vertical-align: middle;
+    *vertical-align: auto;
+    zoom: 1;
+    *display: inline;
+    background: #c30000;
+    padding: 1em 1em 1em 2.5em;
+    margin: 2em 1em; }
+    /* line 194, ../sass/_modules.sass */
+    #contact .contact-options li a, #contact .contact-options li span {
+      color: #232d37;
+      font-family: fjalla;
+      text-decoration: none;
+      text-stransform: uppercase;
+      font-size: 1.5em; }
+/* line 200, ../sass/_modules.sass */
+#contact .photo {
+  width: 32.20339%;
+  float: left;
+  margin-right: 1.69492%;
+  display: inline; }
+  /* line 202, ../sass/_modules.sass */
+  #contact .photo img {
+    width: 100%; }
+/* line 204, ../sass/_modules.sass */
+#contact .text {
+  width: 57.62712%;
+  float: right;
+  margin-right: 0;
+  *margin-left: -1em;
+  display: inline;
+  line-height: 1.8em; }
+  /* line 207, ../sass/_modules.sass */
+  #contact .text h4 {
+    font-family: yellowtail;
+    text-transform: none;
+    color: #d7cfbc; }

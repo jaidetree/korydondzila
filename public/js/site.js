@@ -113,10 +113,37 @@
             return this;
         }
     });
+    App.modules.WorksView = $.extend(true, {}, KoryDondzila.View, {
+        el: '#works',
+        init: function (options) {
+            KoryDondzila.View.init.call(this, options);
+            $(window).on('scroll', _.bind(this.scroll, this));
+            $(window).on('resize', _.bind(this.resize, this));
+            this.resize();
+        },
+        resize: function (e) {
+            this.top = this.$el.find('.works-ui').offset().top + this.$el.find('.works-ui').outerHeight();
+        },
+        scroll: function (e) {
+            var offset = $('#contact').offset().top,
+                top = $(window).scrollTop();
+
+            if (top > this.top && ! this.$el.find('.works-ui').hasClass('fixed')) {
+                this.$el.find('.works-ui').addClass('fixed');
+            } 
+            else if (top <= this.top && this.$el.find('.works-ui').hasClass('fixed')) {
+                this.$el.find('.works-ui').removeClass('fixed');
+            }
+            else if (top >= offset - 20 && this.$el.find('.works-ui').hasClass('fixed')) {
+                this.$el.find('.works-ui').removeClass('fixed');
+            }
+        }
+    });
     window.KoryDondzila = KoryDondzila;
 })();
 
 $(document).ready(function () {
-    App.views.magicHeaderView = App.make('MagicHeaderView');
-    App.views.FeaturedProjectView = App.make('FeaturedProjectView');
+    App.views.magicHeader = App.make('MagicHeaderView');
+    App.views.featuredProject = App.make('FeaturedProjectView');
+    App.views.works = App.make('WorksView');
 });
