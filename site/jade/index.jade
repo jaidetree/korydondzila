@@ -1,0 +1,108 @@
+extends _layout
+
+block content
+    section#intro
+        .container
+            section.intro
+                h1 Greetings!
+                .name I&rsquo;m Kory Dondzila
+                    h2.who
+                        span.and a
+                        span Technical Designer
+                            span.and &amp;
+                            span Developer
+                a.scroll(href='#reel') Scroll down to see my reel
+
+    section#reel
+        iframe.reel-video(src="//player.vimeo.com/video/42804566", width="692", height="389", frameborder="0", webkitallowfullscreen, mozallowfullscreen, allowfullscreen)
+
+    section#works
+        .container
+            h2 Works
+            ul.works-list
+                li.work
+                    .thumbnail
+                        img(src='/static/images/icons/joint.svg', 'Segment Joint Script')
+                    .inner
+                        .content
+                            h3 Segment Joint
+                            p A rigging tool that splits up a joint into equal parts.
+                                a(href='https://www.youtube.com/watch?v=KUS1yUvSLJQ') Watch Video of Segement Joint Tool
+                            a.link(href='https://gist.github.com/korydondzila/ee1579f0277616ba7791')
+                                span gist.github.com/korydondzila/ee1579f0277616ba7791
+                li.work
+                    .thumbnail
+                        img(src='/static/images/icons/script.svg', 'Script Tool')
+                    .inner
+                        .content
+                            h3 Script Tool
+                            p A prototype for a scripting interface. Originally done as a joke, but it became an exercise in UI scripting.
+                            a.link(href='https://gist.github.com/korydondzila/79c44ff28e2f208ed1db')
+                                span gist.github.com/korydondzila/79c44ff28e2f208ed1db
+                li.work
+                    .thumbnail
+                        img(src='/static/images/icons/grass.svg', 'Grass')
+                    .inner
+                        .content
+                            h3 Grass
+                            p A prototype for a grass generator and simulator. Shown in demo reel.
+                            a.link(href='https://gist.github.com/korydondzila/d7627149c196d267f872')
+                                span gist.github.com/korydondzila/d7627149c196d267f872
+                li.work
+                    .thumbnail
+                        img(src='/static/images/icons/city.svg', 'City Generator')
+                    .inner
+                        .content
+                            h3 City Generator
+                            p A random city generator. Shown in demo reel.
+                            a.link(href='https://gist.github.com/korydondzila/c64da26823ada60c707d')
+                                span gist.github.com/korydondzila/c64da26823ada60c707d
+                li.work
+                    .thumbnail
+                        img(src='/static/images/icons/math.svg', 'Bary Centrics Rigging System')
+                    .inner
+                        .content
+                            h3 Bary Centrics
+                            p A barycentric rigging system. The first video features the prototype script, while the second video is the very much improved version written in Python and the UI designed in Qt. 
+                                a(href='https://www.youtube.com/watch?v=HCGX5N00ioU') Watch Video of Script
+                                a(href='https://www.youtube.com/watch?v=ynjszD_5bnY') Watch New UI Version Video
+                            a.link(href='https://gist.github.com/korydondzila/d554b4f9ef8e14723990')
+                                span gist.github.com/korydondzila/d554b4f9ef8e14723990
+                li.work
+                    .thumbnail
+                        img(src='/static/images/icons/tool.svg', 'Auto Rig')
+                    .inner
+                        .content
+                            h3 Auto Rig
+                            p A prototype for an auto rigger.
+                            a.link(href='https://gist.github.com/korydondzila/2839802')
+                                span gist.github.com/korydondzila/2839802
+
+    section#contact
+        .header
+            .container
+                h2 Contact Kory
+                h3 Available for Work
+        .container
+            .contact-options
+                li.email
+                    a(href="mailto:kory@korydondzila.com") kory@korydondzila.com
+                li.phone
+                    span 734.262.2546
+                li.resume
+                    a(href="/static/downloads/Kory-Dondzila-resume.pdf") Resume
+            .about
+                .photo
+                    img(src="/static/images/kory_dondzila1.jpg" alt="Photo of Kory Dondzila")
+                .text
+                    h4 About
+                    p My name is Kory Dondzila and I’m a Computer Science master’s student at California State University- Northridge and have earned a double B.F.A. in Game Development and Animation at Savannah College of Art and Design. I have technical and problem solving skills and I specialize in Gameplay Programming, Rigging, Scripting and Tool Development/Prototyping.
+
+                    p I was born and grew up in Michigan. Video games and problem solving have always been a passion of mine, although I didn’t initially want to get into the video game industry. I knew I wanted to be in something detail oriented and technical, and had considered professions such as; jewelry, drafting and physics. It wasn’t until I took a sculpting class that I decided I wanted to get into video games doing modeling. I took all of my basic classes at Schoolcraft Community College and earned an AA in the process.
+
+                    p I then moved to Savannah to study at SCAD as a double major. I had the intention of concentrating in modeling, but after taking the character set-up class I switched to concentrating in Character TD, which was also a minor. When I started learning MEL scripting, I really got into it and found that I was actually quite good, so I continued learning more programming to push my skills towards tool development. I had even started teaching myself higher level mathematics.
+
+                    p Now currently at CSUN studying Computer Science, I have the intent of concentrating on graphics programming, but it&rsquo;s possible that my path will change.
+
+                    p Besides college, I have worked in food service for almost 8 years. I also volunteered for the Girl Scouts as a co-leader for my friend’s troop and even taught them about animation and game development, which was part of their Entertainment Technology badge.
+                    

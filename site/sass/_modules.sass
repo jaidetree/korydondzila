@@ -1,0 +1,274 @@
+.personal
+    font-family: yellowtail
+    color: $color-personal
+.container
+  width: 80%
+  margin: 0 auto
+
+#intro
+  padding-bottom: 8em
+  h1
+    font-family: fjalla
+    color: #e6e6e6
+    text-transform: uppercase
+    text-align: center
+    margin-bottom: 0.25em
+    margin-top: 2em
+  .name
+    display: block
+    border-top: 2px dashed $color-accent
+    color: $color-accent
+    font-size: 4em
+    font-family: yellowtail
+    text-transform: capitalize
+    text-align: center
+    line-height: 1.5em
+  .who
+    display: inline-block
+    margin: 0
+    margin-left: 0.5em
+    font-size: 0.3em
+    h2
+      display: inline-block
+      margin: 0
+      color: $color-accent
+      font-family: fjalla
+      text-align: center
+      line-height: 1.5em
+    .and
+      display: inline-block
+      margin-bottom: 0em
+      margin-left: 0.5em
+      margin-right: 0.5em
+      color: #fff
+      font-family: yellowtail
+      font-size: 0.9em
+      text-align: center
+  .scroll
+    display: block
+    position: relative
+    margin: 0
+    margin-top: 2em
+    margin-bottom: 2em
+    padding: 0
+    font-size: 1.8em
+    font-family: yellowtail
+    text-align: center
+    color: #fff
+    text-decoration: none
+    &:after
+      position: absolute;
+      left: 0
+      right: 0
+      top: 4em
+      bottom: 0
+      width: 1em
+      height: 1em
+      margin: auto
+      padding: 0.3em
+      border: 3px solid $color-support
+      border-radius: 50%
+      color: $color-support
+      font-family: Arial, sans-serif
+      font-size: 0.8em
+      content: '\025BC'
+      transition: all 250ms ease-in-out
+    &:hover:after
+      color: #e0e0e0
+      border-color: #e0e0e0
+      transition: all 250ms ease-in-out
+  +break-at($desktop)
+    h1
+      font-size: 5.5em
+      margin-top: 3em
+    .who
+      font-size: 0.6em
+#reel
+  margin-bottom: 8em
+  text-align: center
+  .reel-video
+    width: auto
+  +break-at($desktop)
+    .reel-video
+      width: 692px
+#works
+  > .container
+    padding: 4em 0
+  h2
+    text-align: center
+    color: $color-accent
+    margin-bottom: 1em
+  .container
+    width: auto
+  .works-list
+    margin: 0 auto
+    margin-top: 4em
+    font-size: 0
+  .work
+    margin: 1%
+    margin-bottom: 1em
+    font-size: 16px
+    vertical-align: top
+    .thumbnail
+      position: relative
+      background: $color-support
+      min-height: 10em
+      text-align: center
+      img
+        position: absolute
+        left: 0
+        right: 0
+        top: 0
+        bottom: 0
+        margin: auto
+        width: auto 
+        height: 5em
+    .inner
+      position: relative
+      padding: 2em
+      background: $color-dark-bg
+      min-height: 14em
+      vertical-align: middle
+      .content
+        h3
+          font-size: 2em
+          color: $color-accent
+          text-align: center
+        p
+          line-height: 1.8em
+          font-size: 1em
+          margin-top: 0.5em
+          text-align: center
+          margin-bottom: 2em
+          a
+            display: block
+            color: $color-accent
+            text-decoration: none
+            margin: 0.5em 0
+            &:hover
+              text-decoration: underline
+        .link
+          position: absolute
+          left: 0
+          height: 40px;
+          bottom: 0
+          right: 0
+          color: $color-support
+          text-decoration: none
+          font-family: Helvetica, 'Helvetica Neue', Arial, sans-serif
+          font-size: 0.5em
+          &:hover
+            color: $color-accent
+          span
+            display: block
+            position: absolute
+            right: 0
+            padding-right: 48px
+            bottom: 18px
+            padding-top: 14px
+            &:after
+              position: absolute
+              top: 0
+              right: 0
+              width: 40px
+              height: 40px
+              background: url(/static/images/icons/link.svg) no-repeat 50% 50%
+              font-size: 0
+              content: '.'
+  +break-at($desktop)
+    .work-list
+      width: 80%
+    .work
+      display: inline-block
+      width: 48%
+      .inner
+        .content
+          .link
+            font-size: 0.8em
+            span
+              bottom: 13px
+              padding-top: 14px
+#contact
+  .header
+    background: $color-accent
+    padding: 2em 0
+    text-align: center
+    font-size: 1.4em
+    h2
+      color: $color-dark-bg
+      margin: 0 auto
+    h3
+      position: relative
+      display: inline-block
+      color: $color-support
+      font-size: 1.3em
+      font-family: yellowtail
+      text-transform: none
+  .contact-options
+    margin: 3em 0
+    text-align: center
+    li
+      position: relative
+      display: inline-block
+      background: $color-accent
+      padding: 1em 1em 1em 2.5em
+      margin: 2em 1em
+      &:before
+        position: absolute
+        left: 0
+        width: 40px
+        top: 0
+        bottom: 0
+        margin: auto
+        font-size: 0
+        content: '.'
+        background-repeat: no-repeat
+        background-position: 50% 50%
+        background-size: 80%
+      a, span
+        color: $color-dark-bg
+        font-family: fjalla
+        text-decoration: none
+        text-stransform: uppercase
+        font-size: 1.5em
+      &.resume
+        text-transform: uppercase
+      &.email:before
+        background-image: url(/static/images/icons/email.svg)
+      &.phone:before
+        background-image: url(/static/images/icons/phone.svg)
+      &.resume:before
+        background-image: url(/static/images/icons/pdf.svg)
+  .about
+    position: relative
+  .photo
+    margin-bottom: 3em
+    img
+      width: 100%
+  .text
+    line-height: 1.8em
+    h4
+      font-family: yellowtail
+      text-transform: none
+      color: $color-accent
+    p
+      margin-bottom: 1em
+  +break-at($desktop)
+    .header
+      h2
+        width: 12em
+        border-bottom: 2px solid $color-support
+        padding-bottom: 0.5em
+      h3
+        margin: auto
+        top: -0.6em
+        background: $color-accent
+        padding: 0 1em
+    .about
+      width: 70%
+      margin: 0 auto
+    .photo
+      position: absolute
+      width: 20em
+    .text
+      margin-left: 22em

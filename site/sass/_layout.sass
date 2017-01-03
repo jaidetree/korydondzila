@@ -1,0 +1,55 @@
+#l-header
+  border-top: 4px solid $color-accent
+  background: $color-dark-bg
+  color: #fff
+  font-family: fjalla
+  position: fixed
+  top: 0
+  left: 0
+  right: 0
+  z-index: 800
+  a
+    color: $color-support
+    text-decoration: none
+    text-transform: uppercase
+    &:hover
+      color: $color-accent
+  ul
+    text-align: center
+  li
+    display: inline-block
+    padding: 0.5em 0.5em
+    font-size: 1.3em
+  li.resume a
+    color: $color-accent
+  #logo
+    display: none
+  +break-at($desktop)
+    background: $color-dark-bg url(/static/images/korydondzila_logo_compact.svg) no-repeat 50% 50%
+    ul
+      margin-left: 5%
+    li
+      font-size: 2em
+    #logo
+      display: block
+      background: url(/static/images/korydondzila_logo.svg) no-repeat 50% 50%
+      text-indent: -999px
+      overflow: hidden
+      position: absolute
+      top: 0
+      left: 50%
+      margin-left: -85px
+      height: 168px
+      width: 170px
+      font-size: 0
+      transition: top 250ms ease-in-out
+    .split
+      &:after
+        display: inline-block
+        width: 180px
+        font-size: 0
+        content: '.'
+    &.compact
+      #logo
+        top: -300px
+        transition: top 250ms ease-in-out

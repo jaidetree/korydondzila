@@ -1,0 +1,28 @@
+doctype html
+html
+    head
+        title Kory Dondzila
+        link(rel='stylesheet', href='/static/css/style.css')
+        link(rel='icon', type='image/png', href='static/images/favicon.png')
+        meta(name='description', content='Kory Dondzila is a talented technical designer with a focus towards interactive 3D programming & design. On Kory’s works page you’ll find some Maya Mel scripts he has released free to the public.')
+        block head
+        meta(name='viewport', content='width=device-width, initial-scale=1.0, maximum-scale=1.0')
+    body
+        #wrapper
+            header#l-header
+                nav
+                    ul.navbar
+                        li.first.page
+                            a(href='#reel') Reel
+                        li.page.split
+                            a(href='#works') Works
+                        li.page
+                            a(href='#contact') Contact
+                        li.resume
+                            a(href='/static/downloads/Kory-Dondzila-resume.pdf') Resume
+                    div.banner
+                        h1#logo Kory Dondzila - Artist &amp; Developer
+            #l-main
+                block content
+            #l-footer
+        script(src='/static/js/app.js')

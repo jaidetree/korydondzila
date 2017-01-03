@@ -1,0 +1,6 @@
+# App entry points
+'/': 'general'
+'/admin/': 'admin'
+
+# API URLs
+'/users/': 'users'

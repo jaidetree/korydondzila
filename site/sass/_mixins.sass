@@ -1,0 +1,10 @@
+=break-at($min:0, $max:0)
+    @if $min == 0
+        @media screen and (max-width: $max)
+            @content
+    @else if $max == 0
+        @media screen and (min-width: $min)
+            @content
+    @else
+        @media screen and (min-width: $min) and (max-width: $max)
+            @content

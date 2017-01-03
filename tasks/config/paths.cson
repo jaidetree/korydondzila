@@ -1,0 +1,22 @@
+tests: 'test/**/*.js'
+src:
+  coffee: 'src/**/*.coffee'
+site:
+  coffee: 'site/coffee/app.coffee'
+  sass: 'site/sass/style.sass'
+  jade: 'site/jade/index.jade'
+build:
+  coffee: './lib'
+dist:
+  coffee: 'dist/static/js'
+  sass: 'dist/static/css'
+  jade: 'dist'
+watch:
+  sass: 'site/sass/**/*.sass'
+  jade: 'site/jade/**/*.jade'
+  assets: [
+    'dist/**/*.js'
+    'dist/**/*.html'
+    'dist/**/*.css'
+  ]
+  
