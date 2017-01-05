@@ -1,16 +1,12 @@
 gulp = require 'gulp'
 
 require('./tasks')([
-  'browserify'
+  'build'
   'coffee'
   'jade'
-  'lint'
   'sass'
-  'start'
   'sync'
-  'test'
   'watch'
-  'watchify'
 ])
 
 gulp.task 'default', [ 'start', 'sync', 'watchify']

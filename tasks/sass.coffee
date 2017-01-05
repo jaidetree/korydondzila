@@ -4,14 +4,13 @@ sourcemaps = require 'gulp-sourcemaps'
 
 
 module.exports = (gulp, gutil, paths) ->
-  # sassDir = path.join process.cwd(), path.dirname(paths.site.sass)
   sassDir = process.cwd()
 
   return ->
     ###
     # Compile SASS code
     ###
-    return gulp.src paths.site.sass
+    return gulp.src paths.src.sass
       .pipe sourcemaps.init()
       .pipe sass({
         indentedSyntax: true

@@ -10,7 +10,7 @@ module.exports = (gulp, gutil, paths) ->
     ###
     # Compile jade templates
     ###
-    return gulp.src paths.site.jade
+    return gulp.src paths.src.jade
       .pipe jade(
         locals: data
       )

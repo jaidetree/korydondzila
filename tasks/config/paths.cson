@@ -1,12 +1,7 @@
-tests: 'test/**/*.js'
 src:
-  coffee: 'src/**/*.coffee'
-site:
-  coffee: 'site/coffee/app.coffee'
-  sass: 'site/sass/style.sass'
-  jade: 'site/jade/index.jade'
-build:
-  coffee: './lib'
+  coffee: 'src/coffee/app.coffee'
+  sass: 'src/sass/style.sass'
+  jade: 'src/jade/index.jade'
 dist:
   coffee: 'dist/static/js'
   sass: 'dist/static/css'
@@ -19,4 +14,4 @@ watch:
     'dist/**/*.html'
     'dist/**/*.css'
   ]
-  
+

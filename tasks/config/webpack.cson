@@ -1,0 +1,10 @@
+entry: './src/coffee/app.coffee'
+output:
+  path: './dist/static/js'
+  filename: 'app.js'
+resolve:
+  extensions: ['', '.js', '.coffee']
+module:
+  loaders: [
+    { test: /\.coffee$/, loader: 'coffee-loader' }
+  ]
